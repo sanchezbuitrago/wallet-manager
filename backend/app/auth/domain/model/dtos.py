@@ -13,3 +13,8 @@ class TokenInfo(base_types.ValueObject):
     user_id: str
     exp: datetime.datetime
     token_type: TokenType
+
+
+class LoginResponse(base_types.ValueObject):
+    access_token: str
+    refresh_token: str

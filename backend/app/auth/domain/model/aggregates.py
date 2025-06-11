@@ -16,7 +16,7 @@ class User(base_types.Aggregate):
     @staticmethod
     def create(first_names: str, last_names: str, email: str, phone_number: standard_types.PhoneNumber, pin: str) -> "User":
         return User(
-            id=UserId(id="1234"),
+            id=UserId(id=standard_types.IdGenerator.generate()),
             first_names=first_names,
             last_names=last_names,
             email=email,

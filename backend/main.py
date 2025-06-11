@@ -4,7 +4,8 @@ from app.auth.entrypoints import web as auth_entrypoints
 
 app = fastapi.FastAPI()
 
-app.include_router(router=auth_entrypoints.auth_routes, prefix="/users", tags=["Users"])
+app.include_router(router=auth_entrypoints.users_routes, prefix="/users", tags=["Users"])
+app.include_router(router=auth_entrypoints.auth_routes, prefix="/auth", tags=["Auth"])
 
 
 @app.exception_handler(fastapi.exceptions.RequestValidationError)

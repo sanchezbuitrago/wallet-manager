@@ -30,6 +30,10 @@ class UnitOfWork(SingletonBase):
     def get_default_repo(self, entity_type: Type[T]) -> BaseRepository[T]:
         ...
 
+    @abc.abstractmethod
+    def get_custom_repository(self, repository_type: Type[BaseRepository],  entity_type: Type[T]) -> BaseRepository:
+        ...
+
 
 class FakeRepository(BaseRepository[T]):
 
@@ -44,22 +48,22 @@ class FakeRepository(BaseRepository[T]):
         return None
 
     def put(self, entity: T) -> None:
-        print(self.db)
         if not self.db.get(self.entity_type):
             self.db.update({self.entity_type: {entity.id: entity}})
         else:
             self.db[self.entity_type].update({entity.id: entity})
-        print(self.db)
 
 
 class FakeUnitOfWork(UnitOfWork):
+
     _initialized = False
 
-    def __init__(self):
+    def __init__(self) -> None:
         if self._initialized:
             return
         self._db: Dict[Type[T], Dict[U, T]] = {}
         self._repos: Dict[Type[T], FakeRepository[T]] = {}
+        self._custom_repos: Dict[Type[BaseRepository], BaseRepository[T]]= {}
         self._initialized = True
 
     def get_default_repo(self, entity_type: Type[T]) -> BaseRepository[T]:
@@ -69,3 +73,13 @@ class FakeUnitOfWork(UnitOfWork):
             new_repo = FakeRepository[entity_type](db=self._db, entity_type=entity_type)
             self._repos.update({entity_type: new_repo})
             return new_repo
+
+    def get_custom_repository(self, repository_type: Type[FakeRepository], entity_type: Type[T]) -> BaseRepository[T]:
+        if self._custom_repos and self._custom_repos.get(repository_type):
+            return self._custom_repos.get(repository_type)
+        else:
+            new_repo = repository_type(db=self._db, entity_type=entity_type)
+            self._custom_repos.update({repository_type: new_repo})
+            return new_repo
+
+
