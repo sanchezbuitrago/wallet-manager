@@ -25,3 +25,7 @@ def create_user(
         )
         repo.put(entity=new_user)
         _LOGGER.info("User with email [%s] created", cmd.email)
+
+
+def change_pin(uow: unit_of_work.UnitOfWork, cmd: commands.ChangePINRequest) -> None:
+    ...

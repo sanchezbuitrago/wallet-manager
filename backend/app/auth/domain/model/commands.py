@@ -12,3 +12,9 @@ class CreateUserRequest(base_types.ValueObject):
 class DoLoginRequest(base_types.ValueObject):
     email: str
     pin: str
+
+
+class ChangePINRequest(base_types.ValueObject):
+    email: str
+    old_pin: str
+    new_pin: str

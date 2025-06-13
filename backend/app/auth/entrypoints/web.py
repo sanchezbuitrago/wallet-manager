@@ -63,17 +63,6 @@ async def do_login(create_user_request: commands.DoLoginRequest) -> fastapi.Resp
             )
         )
     except (exceptions.EmailNotFoundError, exceptions.PINNotMatchError):
-        return fastapi.Response(content=json.dumps(standard_types.ApiResponse(
-            success=False,
-            body={},
-            errors=[
-                standard_types.ApiError(
-                    title="Bad email or password",
-                    code="BAD_EMAIL_OR_PASSWORD_ERROR",
-                    detail=f"The email or pin are incorrect"
-                )
-            ]
-        ).model_dump()))
         return fastapi.Response(
             content=formatters.format_response(
                 success=False,
@@ -87,3 +76,9 @@ async def do_login(create_user_request: commands.DoLoginRequest) -> fastapi.Resp
                 ]
             )
         )
+
+
+@users_routes.patch("/users/pin")
+@wrappers.authentication_required
+async def change_pin(change_pin_request: commands.ChangePINRequest, authorization: str = fastapi.Header(None)) -> fastapi.Response:
+    ...
