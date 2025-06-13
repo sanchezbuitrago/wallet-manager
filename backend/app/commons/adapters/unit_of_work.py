@@ -6,6 +6,9 @@ T = TypeVar("T", bound=base_types.Aggregate)
 U = TypeVar("U", bound=base_types.EntityId)
 
 
+_IN_MEMORY_DB: Dict[Type[T], Dict[U, T]] = {}
+
+
 class SingletonBase:
     _instances = {}
 
@@ -24,34 +27,41 @@ class BaseRepository(Generic[T]):
     def get_by_id(self, entity_id: U) -> T:
         ...
 
-
-class UnitOfWork(SingletonBase):
     @abc.abstractmethod
-    def get_default_repo(self, entity_type: Type[T]) -> BaseRepository[T]:
+    def get_by_field(self, field: str, value: str) -> T:
         ...
 
+
+class UnitOfWork(SingletonBase):
+
     @abc.abstractmethod
-    def get_custom_repository(self, repository_type: Type[BaseRepository],  entity_type: Type[T]) -> BaseRepository:
+    def get_default_repo(self, entity_type: Type[T]) -> BaseRepository[T]:
         ...
 
 
 class FakeRepository(BaseRepository[T]):
 
-    def __init__(self, db: Dict[Type[T], Dict[U, T]],
-                 entity_type: Type[T]):
-        self.db: Dict[Type[T], Dict[U, T]] = db
+    def __init__(self, entity_type: Type[T]):
         self.entity_type: Type[T] = entity_type
 
     def get_by_id(self, entity_id: U) -> T | None:
-        if self.db.get(self.entity_type):
-            return self.db[self.entity_type].get(entity_id)
+        if _IN_MEMORY_DB.get(self.entity_type):
+            return _IN_MEMORY_DB[self.entity_type].get(entity_id)
         return None
 
     def put(self, entity: T) -> None:
-        if not self.db.get(self.entity_type):
-            self.db.update({self.entity_type: {entity.id: entity}})
+        if not _IN_MEMORY_DB.get(self.entity_type):
+            _IN_MEMORY_DB.update({self.entity_type: {entity.id: entity}})
         else:
-            self.db[self.entity_type].update({entity.id: entity})
+            _IN_MEMORY_DB[self.entity_type].update({entity.id: entity})
+
+    def get_by_field(self, field: str, value: str) -> T | None:
+        print(_IN_MEMORY_DB)
+        if _IN_MEMORY_DB.get(self.entity_type):
+            for _, item in _IN_MEMORY_DB[self.entity_type].items():
+                if item.model_dump().get(field) == value:
+                    return item
+        return None
 
 
 class FakeUnitOfWork(UnitOfWork):
@@ -63,23 +73,12 @@ class FakeUnitOfWork(UnitOfWork):
             return
         self._db: Dict[Type[T], Dict[U, T]] = {}
         self._repos: Dict[Type[T], FakeRepository[T]] = {}
-        self._custom_repos: Dict[Type[BaseRepository], BaseRepository[T]]= {}
         self._initialized = True
 
     def get_default_repo(self, entity_type: Type[T]) -> BaseRepository[T]:
         if self._repos and self._repos.get(entity_type):
             return self._repos.get(entity_type)
         else:
-            new_repo = FakeRepository[entity_type](db=self._db, entity_type=entity_type)
+            new_repo = FakeRepository[entity_type](entity_type=entity_type)
             self._repos.update({entity_type: new_repo})
             return new_repo
-
-    def get_custom_repository(self, repository_type: Type[FakeRepository], entity_type: Type[T]) -> BaseRepository[T]:
-        if self._custom_repos and self._custom_repos.get(repository_type):
-            return self._custom_repos.get(repository_type)
-        else:
-            new_repo = repository_type(db=self._db, entity_type=entity_type)
-            self._custom_repos.update({repository_type: new_repo})
-            return new_repo
-
-

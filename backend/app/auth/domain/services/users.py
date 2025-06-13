@@ -1,16 +1,17 @@
 from app.commons import logs
 from app.commons.adapters import unit_of_work
-from app.auth.domain.model import commands, aggregates, exceptions, dtos
-from app.auth.repository import user as  user_repository
-from app.auth.domain.services import auth
+from app.auth.domain.model import commands, aggregates, exceptions
 
 _LOGGER = logs.get_logger()
 
 
-def create_user(uow: unit_of_work.UnitOfWork, cmd: commands.CreateUserRequest) -> None:
+def create_user(
+        cmd: commands.CreateUserRequest,
+        uow: unit_of_work.UnitOfWork,
+) -> None:
     _LOGGER.info("Try to create a new user with email [%s]", cmd.email)
-    repo: user_repository.FakeUserRepository = uow.get_custom_repository(entity_type=aggregates.User, repository_type=user_repository.FakeUserRepository)
-    user = repo.find_by_email(email=cmd.email)
+    repo = uow.get_default_repo(entity_type=aggregates.User,)
+    user = repo.get_by_field(field="email", value=cmd.email)
     if user:
         _LOGGER.info("User with email [%s] already exist with email [%s]", cmd.email, user.id.value)
         raise exceptions.UserAlreadyExistError()

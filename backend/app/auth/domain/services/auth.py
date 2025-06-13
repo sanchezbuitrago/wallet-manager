@@ -5,7 +5,6 @@ from app.auth.domain.model import exceptions, dtos, commands, aggregates
 from app.auth.domain.model.dtos import TokenInfo
 from app.commons.adapters import unit_of_work
 from app.commons import logs
-from app.auth.repository import user as user_repository
 
 _LOGGER = logs.get_logger()
 
@@ -54,8 +53,8 @@ def do_login(
         auth_secret_key: str
 ) -> dtos.LoginResponse:
     _LOGGER.info("Try to do login with email [%s]", cmd.email)
-    repo: user_repository.FakeUserRepository = uow.get_custom_repository(entity_type=aggregates.User, repository_type=user_repository.FakeUserRepository)
-    user: aggregates.User = repo.find_by_email(email=cmd.email)
+    repo = uow.get_default_repo(entity_type=aggregates.User)
+    user: aggregates.User = repo.get_by_field(field="email", value=cmd.email)
     if not user:
         _LOGGER.info("The email [%s] is not registered", cmd.email)
         raise exceptions.EmailNotFoundError()
