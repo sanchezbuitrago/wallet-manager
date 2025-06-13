@@ -1,11 +1,19 @@
+from app.commons import logs
 from app.commons.adapters import unit_of_work
 from app.auth.domain.model import commands, aggregates, exceptions
 
+_LOGGER = logs.get_logger()
 
-def create_user(uow: unit_of_work.UnitOfWork, cmd: commands.CreateUserRequest) -> None:
-    repo = uow.get_default_repo(entity_type=aggregates.User)
-    user = repo.get_by_id(entity_id=aggregates.UserId(id="1234"))
+
+def create_user(
+        cmd: commands.CreateUserRequest,
+        uow: unit_of_work.UnitOfWork,
+) -> None:
+    _LOGGER.info("Try to create a new user with email [%s]", cmd.email)
+    repo = uow.get_default_repo(entity_type=aggregates.User,)
+    user = repo.get_by_field(field="email", value=cmd.email)
     if user:
+        _LOGGER.info("User with email [%s] already exist with email [%s]", cmd.email, user.id.value)
         raise exceptions.UserAlreadyExistError()
     else:
         new_user = aggregates.User.create(
@@ -16,3 +24,8 @@ def create_user(uow: unit_of_work.UnitOfWork, cmd: commands.CreateUserRequest) -
             email=cmd.email
         )
         repo.put(entity=new_user)
+        _LOGGER.info("User with email [%s] created", cmd.email)
+
+
+def change_pin(uow: unit_of_work.UnitOfWork, cmd: commands.ChangePINRequest) -> None:
+    ...

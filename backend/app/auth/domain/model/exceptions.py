@@ -16,3 +16,9 @@ class TokenTypeNotValidError(Exception):
 
 class UserAlreadyExistError(Exception):
     ...
+
+class EmailNotFoundError(Exception):
+    ...
+
+class PINNotMatchError(Exception):
+    ...
