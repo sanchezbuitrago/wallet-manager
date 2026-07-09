@@ -15,6 +15,5 @@ class DoLoginRequest(base_types.ValueObject):
 
 
 class ChangePINRequest(base_types.ValueObject):
-    email: str
     old_pin: str
     new_pin: str

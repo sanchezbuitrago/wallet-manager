@@ -4,75 +4,81 @@ import jwt
 from functools import wraps
 from typing import Callable, Any
 
+import pydantic_settings
+
+from app.commons import context
 from app.commons import logs, formatters
 from app.commons import standard_types
+from app.auth.domain.model import dtos
 
 from fastapi import Response
 
 _LOGGER = logs.get_logger()
+
+class _Settings(pydantic_settings.BaseSettings):
+    auth_secret_key: str
+    algorithm: str
+
+_SETTINGS = _Settings()
 
 _AUTHORIZATION_HEADER_KEY = "authorization"
 
 
 def authentication_required(function: Callable) -> Callable:
     @wraps(function)
-    def decorator(*args: Any, **kwargs: Any) -> Response:
+    async def decorator(*args: Any, **kwargs: Any) -> Response:
         print(kwargs)
         authorization_header = kwargs.get(_AUTHORIZATION_HEADER_KEY)
         _LOGGER.warning("VALIDATING TOKEN ##############################")
         if not authorization_header:
             _LOGGER.warning("Valid token missing")
-            return Response(
+            return formatters.format_http_response(
                 status_code=http.HTTPStatus.UNAUTHORIZED,
-                content=formatters.format_response(
-                    success=False,
-                    body={},
-                    errors=[
-                        standard_types.ApiError(
-                            title="User unauthorized",
-                            code="AUTH/UNAUTHORIZED",
-                            detail="Missing authentication token"
-                        )
-                    ]
-                )
+                success=False,
+                body={},
+                errors=[
+                    standard_types.ApiError(
+                        title="User unauthorized",
+                        code="AUTH/UNAUTHORIZED",
+                        detail="Missing authentication token"
+                    )
+                ]
             )
         try:
-            data = jwt.decode(authorization_header.split(" ")[-1], verify=False)
+            _LOGGER.info("Token: %s", authorization_header)
+            token = dtos.TokenInfo.model_validate(obj=jwt.decode(authorization_header.split(" ")[-1], key=_SETTINGS.auth_secret_key, algorithms=_SETTINGS.algorithm))
         except jwt.DecodeError as e:
             _LOGGER.warning("Token is invalid, Exception: %s", str(e))
-            return Response(
+            return formatters.format_http_response(
                 status_code=http.HTTPStatus.UNAUTHORIZED,
-                content=formatters.format_response(
-                    success=False,
-                    body={},
-                    errors=[
-                        standard_types.ApiError(
-                            title="User unauthorized",
-                            code="AUTH/UNAUTHORIZED",
-                            detail="Invalid token"
-                        )
-                    ]
-                )
+                success=False,
+                body={},
+                errors=[
+                    standard_types.ApiError(
+                        title="User unauthorized",
+                        code="AUTH/UNAUTHORIZED",
+                        detail="Invalid token"
+                    )
+                ]
             )
 
-        _LOGGER.warning(data["exp"])
+        _LOGGER.warning(token.exp)
         _LOGGER.warning(datetime.datetime.now(tz=datetime.UTC).timestamp())
-        if data["exp"] < datetime.datetime.now(tz=datetime.UTC).timestamp():
+        if token.exp < datetime.datetime.now(tz=datetime.UTC):
             _LOGGER.warning("TOKEN EXPIRED ##############################")
-            return Response(
+            return formatters.format_http_response(
                 status_code=http.HTTPStatus.UNAUTHORIZED,
-                content=formatters.format_response(
-                    success=False,
-                    body={},
-                    errors=[
-                        standard_types.ApiError(
-                            title="User unauthorized",
-                            code="AUTH/UNAUTHORIZED",
-                            detail="Token expired"
-                        )
-                    ]
-                )
+                success=False,
+                body={},
+                errors=[
+                    standard_types.ApiError(
+                        title="User unauthorized",
+                        code="AUTH/UNAUTHORIZED",
+                        detail="Token expired"
+                    )
+                ]
             )
-        return function(*args, **kwargs)
+        context.UserContext.set(user_id=token.user_id)
+        return await function(*args, **kwargs)
 
     return decorator

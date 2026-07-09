@@ -21,3 +21,8 @@ class EntityId(pydantic.BaseModel):
 
 class Aggregate(pydantic.BaseModel):
     id: EntityId
+
+
+class PhoneNumber(pydantic.BaseModel):
+    country_code: str
+    number: str
