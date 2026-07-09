@@ -3,7 +3,7 @@ import http
 import fastapi
 import pydantic_settings
 from app.commons import context
-from app.commons.adapters import unit_of_work
+from app.commons.adapters import mongo_uow
 from app.auth.domain.model import commands, exceptions
 from app.commons import standard_types, wrappers, formatters
 
@@ -25,7 +25,7 @@ _SETTINGS = _Settings()
 async def create_user(create_user_request: commands.CreateUserRequest) -> fastapi.Response:
     try:
         users.create_user(
-            uow=unit_of_work.FakeUnitOfWork(),
+            uow=mongo_uow.MongoUOW(),
             cmd=create_user_request
         )
         return formatters.format_http_response(
@@ -51,7 +51,7 @@ async def create_user(create_user_request: commands.CreateUserRequest) -> fastap
 async def do_login(create_user_request: commands.DoLoginRequest) -> fastapi.Response:
     try:
         login_response = auth.do_login(
-            uow=unit_of_work.FakeUnitOfWork(),
+            uow=mongo_uow.MongoUOW(),
             cmd=create_user_request,
             auth_secret_key=_SETTINGS.auth_secret_key,
             algorithm=_SETTINGS.algorithm
@@ -81,7 +81,7 @@ async def change_pin(change_pin_request: commands.ChangePINRequest, authorizatio
     try:
         print(context.UserContext.get())
         users.change_pin(
-            uow=unit_of_work.FakeUnitOfWork(),
+            uow=mongo_uow.MongoUOW(),
             cmd=change_pin_request
         )
         return formatters.format_http_response(

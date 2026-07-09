@@ -1,6 +1,6 @@
 from typing import Dict, Iterator, Optional, Type, Any
 
-from commons import logs, unit_of_work
+from app.commons import logs, unit_of_work
 
 _LOGGER = logs.get_logger()
 
