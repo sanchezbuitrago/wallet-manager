@@ -57,6 +57,31 @@ Shared infrastructure lives in `backend/app/commons/`:
 - `context.py` — `UserContext` (request-scoped user ID via `contextvars`)
 - `standard_types.py` — `ApiResponse`, `ApiError`, `IdGenerator`
 - `formatters.py` — `format_http_response()` for consistent JSON envelope
+- `base_types.py` — `ValueObject`, `EntityId`, `Aggregate`, `ForeignAggregate`
+
+### Aggregate Ownership
+
+Each context owns its aggregates. Cross-context references use `ForeignAggregate` (a lightweight entity with only `id`):
+
+| Context | Aggregate | Location |
+|---|---|---|
+| `auth` | `User` (full lifecycle) | `app/auth/domain/model/aggregates.py` |
+| `webhooks` | `Message` | `app/webhooks/domain/model/aggregates.py` |
+| `webhooks` | `User` (FK reference only) | `app/webhooks/domain/model/entities.py` |
+
+### Module Independence Rule
+
+Modules (`auth`, `webhooks`, or any future module) must **never import from each other**. All shared logic (models, services, adapters) must live in `commons/`. This keeps modules decoupled and ready for future microservice extraction.
+
+When a module needs to query data owned by another context, it uses the UoW pattern with its own `ForeignAggregate` entity to query the collection directly — no service imports between modules.
+
+```
+  <module_a> ──→ commons (shared)
+  <module_b> ──→ commons (shared)
+
+  <module_a> ──✗──→ <module_b>  # FORBIDDEN
+  <module_b> ──✗──→ <module_a>  # FORBIDDEN
+```
 
 ### Routes
 

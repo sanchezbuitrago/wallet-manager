@@ -2,7 +2,7 @@ import datetime
 import jwt
 
 from app.auth.domain.model import exceptions, dtos, commands
-from app.commons.users.domain.models import aggregates
+from app.auth.domain.model import aggregates
 from app.auth.domain.model.dtos import TokenInfo
 from app.commons.adapters import unit_of_work
 from app.commons import logs
@@ -58,13 +58,13 @@ def do_login(
 ) -> dtos.LoginResponse:
     _LOGGER.info("Try to do login with email [%s]", cmd.email)
     repo = uow.get_repo(entity_type=aggregates.User)
-    user: aggregates.User = next(repo.find_by(find={"email": cmd.email}))
+    user: aggregates.User = next(repo.find_by(find={"email": cmd.email}), None)
     if not user:
         _LOGGER.info("The email [%s] is not registered", cmd.email)
         raise exceptions.EmailNotFoundError()
 
     if user.pin != cmd.pin:
-        _LOGGER.info("Pin not mathc to do login with email [%s]", cmd.email)
+        _LOGGER.info("Pin not match to do login with email [%s]", cmd.email)
         raise exceptions.PINNotMatchError()
 
     _LOGGER.info("Login process successfully for email [%s]", cmd.email)

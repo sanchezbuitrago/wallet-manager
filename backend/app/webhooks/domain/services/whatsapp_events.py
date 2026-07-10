@@ -5,6 +5,7 @@ from app.webhooks.commons.adapters import evolution_api
 from app.webhooks.domain.model import commands
 from app.webhooks.commons.adapters.n8n import n8n_adapter
 from app.webhooks.commons.adapters.n8n.domain import model as n8n_model
+from app.webhooks.domain.model import entities, aggregates
 
 _LOGGER = logs.get_logger()
 
@@ -30,6 +31,25 @@ async def process_message_upsert_event(
     else:
         number = jid
 
+    user_repo = uow.get_repo(entity_type=entities.User)
+    user = next(user_repo.find_by(find={"full_phone": number}), None)
+    if not user:
+        _LOGGER.info("Unregistered user sent message from [%s]", number)
+        await evolution_api_adapter.send_text_message(jid=jid, message="No se encontró un usuario registrado con este número. Por favor registra tu cuenta primero.")
+        return
+
+    _LOGGER.info("User [%s] sent message from [%s]", user.id.value, number)
+
+    message = aggregates.Message.create(
+        user_id=user.id.value,
+        phone_number=number,
+        content="audio",
+        message_type="AUDIO"
+    )
+    repo = uow.get_repo(entity_type=aggregates.Message)
+    repo.save(new_item=message)
+    _LOGGER.info("Message [%s] saved for user [%s]", message.id.value, user.id.value)
+
     await evolution_api_adapter.send_text_message(jid=jid, message="Procesando solicitud🏃")
     media_file = await evolution_api_adapter.get_media_file(message_id=cmd.data.key.id)
     # TODO: Recibir adaptador por parametro
@@ -38,6 +58,7 @@ async def process_message_upsert_event(
         message=n8n_model.N8NMediaFile(
             type=n8n_model.MessageType.AUDIO,
             number=jid,
+            user_id=user.id.value,
             media_file=n8n_model.MediaFile(
                 file_name=media_file.file_name,
                 media_type=media_file.media_type,
@@ -46,9 +67,6 @@ async def process_message_upsert_event(
             )
         )
     )
-
-
-    #await evolution_api_adapter.get_profile(number=number)
 
 
 _EVENTS_PROCESSOR: dict[str, Callable[[commands.WhatsappEventCommand, evolution_api.EvolutionApiAdapter, unit_of_work.AbstractUnitOfWork], Coroutine[None, None, None]]] = {

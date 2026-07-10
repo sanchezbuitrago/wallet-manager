@@ -18,4 +18,5 @@ class MessageType(enum.StrEnum):
 class N8NMediaFile(base_types.ValueObject):
     type: MessageType
     number: str
+    user_id: str
     media_file: MediaFile

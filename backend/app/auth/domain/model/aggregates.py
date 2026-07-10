@@ -11,6 +11,7 @@ class User(base_types.Aggregate):
     last_names: str
     email: str
     phone_number: standard_types.PhoneNumber
+    full_phone: str
     pin: str
 
     @staticmethod
@@ -21,5 +22,6 @@ class User(base_types.Aggregate):
             last_names=last_names,
             email=email,
             phone_number=phone_number,
+            full_phone=f"{phone_number.country_code}{phone_number.number}",
             pin=pin
         )

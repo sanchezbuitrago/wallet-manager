@@ -15,11 +15,21 @@ class EntityId(pydantic.BaseModel):
         values['value'] = '#'.join(parts)
         return values
 
+    def key(self) -> str:
+        return self.value
+
     class Config:
         frozen = True
         arbitrary_types_allowed = False
 
 class Aggregate(pydantic.BaseModel):
+    id: EntityId
+
+
+class ForeignAggregate(pydantic.BaseModel):
+    """Base class for entities that reference an aggregate owned by another context.
+    Semantically identical to Aggregate, but signals that this entity's lifecycle
+    is managed elsewhere."""
     id: EntityId
 
 
