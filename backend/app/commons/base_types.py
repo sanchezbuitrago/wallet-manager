@@ -22,15 +22,19 @@ class EntityId(pydantic.BaseModel):
         frozen = True
         arbitrary_types_allowed = False
 
-class Aggregate(pydantic.BaseModel):
+class DomainEntity(pydantic.BaseModel):
     id: EntityId
 
 
-class ForeignAggregate(pydantic.BaseModel):
+class Aggregate(DomainEntity):
+    pass
+
+
+class ForeignAggregate(DomainEntity):
     """Base class for entities that reference an aggregate owned by another context.
     Semantically identical to Aggregate, but signals that this entity's lifecycle
     is managed elsewhere."""
-    id: EntityId
+    pass
 
 
 class PhoneNumber(pydantic.BaseModel):

@@ -1,14 +1,14 @@
 import http
 import json
 import fastapi
-from typing import Dict, Any, List
+from typing import Any
 from app.commons import standard_types
 
 
 def format_http_response(
         success: bool,
-        body: Dict[str, Any],
-        errors: List[standard_types.ApiError],
+        body: dict[str, Any],
+        errors: list[standard_types.ApiError],
         status_code: int = http.HTTPStatus.OK
 ) -> fastapi.Response:
     return fastapi.Response(

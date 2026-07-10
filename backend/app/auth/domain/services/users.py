@@ -1,5 +1,3 @@
-from typing import Optional
-
 from app.commons import logs
 from app.commons.adapters import unit_of_work
 from app.auth.domain.model import commands, exceptions
@@ -33,7 +31,7 @@ def create_user(
 def find_user_by_phone(
         phone_number: str,
         uow: unit_of_work.AbstractUnitOfWork,
-) -> Optional[aggregates.User]:
+) -> aggregates.User | None:
     _LOGGER.info("Looking for user with phone [%s]", phone_number)
     repo = uow.get_repo(entity_type=aggregates.User)
     user = next(repo.find_by(find={"full_phone": phone_number}), None)

@@ -1,4 +1,4 @@
-from typing import Dict, Iterator, Optional, Type, Any
+from typing import Any, Iterator
 
 from app.commons import logs, unit_of_work
 
@@ -7,10 +7,10 @@ _LOGGER = logs.get_logger()
 
 class InMemoryUOW(unit_of_work.AbstractUnitOfWork):
     def __init__(self) -> None:
-        self._db: Dict[str, Dict[str, Dict]] = {}
+        self._db: dict[str, dict[str, dict]] = {}
 
     def get_repo(
-        self, entity_type: Type[unit_of_work.T]
+        self, entity_type: type[unit_of_work.T]
     ) -> unit_of_work.AbstractRepository[unit_of_work.T]:
         return InMemoryRepository(entity_type=entity_type, db_session=self._db)
 
@@ -18,13 +18,13 @@ class InMemoryUOW(unit_of_work.AbstractUnitOfWork):
 class InMemoryRepository(unit_of_work.AbstractRepository):
     def __init__(
         self,
-        entity_type: Type[unit_of_work.T],
-        db_session: Dict[str, Dict[str, Dict]],
+        entity_type: type[unit_of_work.T],
+        db_session: dict[str, dict[str, dict]],
     ) -> None:
-        self._entity_type: Type[unit_of_work.T] = entity_type
+        self._entity_type: type[unit_of_work.T] = entity_type
         self.db_session = db_session
 
-    def get_model_type(self) -> Type[unit_of_work.T]:
+    def get_model_type(self) -> type[unit_of_work.T]:
         return self._entity_type
 
     def query(self) -> Iterator[unit_of_work.T]:
@@ -41,14 +41,14 @@ class InMemoryRepository(unit_of_work.AbstractRepository):
             )
 
     def find_by_id(
-        self, entity_id: unit_of_work.U, entity_type: Type[unit_of_work.T]
-    ) -> Optional[unit_of_work.T]:
+        self, entity_id: unit_of_work.U, entity_type: type[unit_of_work.T]
+    ) -> unit_of_work.T | None:
         _LOGGER.info("GETTING BY ID")
         fields = self.db_session.get(self._entity_type.__name__, {})
         item = fields.get(entity_id.key(), None)
         return self._entity_type.parse_obj(item) if item else None  # type: ignore
 
-    def get_all(self, descending: bool = True, limit: int = 20, find: Dict[str, Any] = {}, sort_by: str = "created_at") -> Iterator[
+    def get_all(self, descending: bool = True, limit: int = 20, find: dict[str, Any] | None = None, sort_by: str = "created_at") -> Iterator[
         unit_of_work.T]:
         _LOGGER.info("GETTING ALL DATA")
         for key_item, value_item in self.db_session.get(
@@ -63,7 +63,7 @@ class InMemoryRepository(unit_of_work.AbstractRepository):
         ).items():
             item_mach = all(
                 value_item.get(item_property) == kwargs[item_property]
-                for item_property in list(kwargs.keys())
+                for item_property in kwargs.keys()
             )
             if item_mach:
                 yield self._entity_type.parse_obj(value_item)

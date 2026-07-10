@@ -1,9 +1,9 @@
 import abc
-from typing import Generic, Iterator, Optional, Type, TypeVar, Dict
+from typing import Generic, Iterator, TypeVar
 
 from app.commons import base_types
 
-T = TypeVar("T", bound=base_types.Aggregate)
+T = TypeVar("T", bound=base_types.DomainEntity)
 U = TypeVar("U", bound=base_types.EntityId)
 
 
@@ -13,7 +13,7 @@ class AbstractRepository(abc.ABC, Generic[T]):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_model_type(self) -> Type[T]:
+    def get_model_type(self) -> type[T]:
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -25,7 +25,7 @@ class AbstractRepository(abc.ABC, Generic[T]):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def find_by_id(self, entity_id: U, entity_type: Type[T]) -> Optional[T]:
+    def find_by_id(self, entity_id: U, entity_type: type[T]) -> T | None:
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -39,5 +39,5 @@ class AbstractRepository(abc.ABC, Generic[T]):
 
 class AbstractUnitOfWork(abc.ABC):
     @abc.abstractmethod
-    def get_repo(self, entity_type: Type[T]) -> AbstractRepository[T]:
+    def get_repo(self, entity_type: type[T]) -> AbstractRepository[T]:
         raise NotImplementedError()

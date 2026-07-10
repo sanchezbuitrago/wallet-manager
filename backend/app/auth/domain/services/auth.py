@@ -3,7 +3,6 @@ import jwt
 
 from app.auth.domain.model import exceptions, dtos, commands
 from app.auth.domain.model import aggregates
-from app.auth.domain.model.dtos import TokenInfo
 from app.commons.adapters import unit_of_work
 from app.commons import logs
 
@@ -15,7 +14,7 @@ _DEFAULT_REFRESH_TOKEN_TIMEDELTA_IN_HOURS = 24
 
 def _create_access_token(user_id: str, tokens_secret_key: str, algorithm:str) -> str:
     return jwt.encode(
-        payload=TokenInfo(
+        payload=dtos.TokenInfo(
             user_id=user_id,
             exp=datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(hours=_DEFAULT_ACCESS_TOKEN_TIMEDELTA_IN_HOURS),
             token_type=dtos.TokenType.ACCESS_TOKEN,
@@ -27,7 +26,7 @@ def _create_access_token(user_id: str, tokens_secret_key: str, algorithm:str) ->
 
 def _create_refresh_toke(user_id: str, tokens_secret_key: str, algorithm:str) -> str:
     return jwt.encode(
-        payload=TokenInfo(
+        payload=dtos.TokenInfo(
             user_id=user_id,
             exp=datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(hours=_DEFAULT_REFRESH_TOKEN_TIMEDELTA_IN_HOURS),
             token_type=dtos.TokenType.REFRESH_TOKEN,

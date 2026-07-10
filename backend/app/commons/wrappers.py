@@ -1,17 +1,16 @@
 import http
 import datetime
 import jwt
-from functools import wraps
-from typing import Callable, Any
+import functools
+from typing import Any, Callable
 
+import fastapi
 import pydantic_settings
 
 from app.commons import context
 from app.commons import logs, formatters
 from app.commons import standard_types
 from app.auth.domain.model import dtos
-
-from fastapi import Response
 
 _LOGGER = logs.get_logger()
 
@@ -25,8 +24,8 @@ _AUTHORIZATION_HEADER_KEY = "authorization"
 
 
 def authentication_required(function: Callable) -> Callable:
-    @wraps(function)
-    async def decorator(*args: Any, **kwargs: Any) -> Response:
+    @functools.wraps(function)
+    async def decorator(*args: Any, **kwargs: Any) -> fastapi.Response:
         _LOGGER.debug("kwargs: %s", kwargs)
         authorization_header = kwargs.get(_AUTHORIZATION_HEADER_KEY)
         _LOGGER.warning("VALIDATING TOKEN ##############################")

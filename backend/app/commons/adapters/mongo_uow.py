@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Iterator, Optional, Type
+from typing import Any, Iterator
 
 import pymongo
 import pydantic_settings
@@ -25,21 +25,21 @@ class MongoUOW(unit_of_work.AbstractUnitOfWork):
         )
 
     def get_repo(
-        self, entity_type: Type[unit_of_work.T]
+        self, entity_type: type[unit_of_work.T]
     ) -> unit_of_work.AbstractRepository[unit_of_work.T]:
         return MongoRepository(entity_type=entity_type, db_client=self.client)
 
 
 class MongoRepository(unit_of_work.AbstractRepository):
     def __init__(
-        self, entity_type: Type[unit_of_work.T], db_client: pymongo.MongoClient
+        self, entity_type: type[unit_of_work.T], db_client: pymongo.MongoClient
     ) -> None:
-        self._entity_type: Type[unit_of_work.T] = entity_type
+        self._entity_type: type[unit_of_work.T] = entity_type
         self.db_client: pymongo.MongoClient = db_client
         self.db: pymongo.collection.Database = db_client[_SETTINGS.mongo_db_name]
         self.collection = self._get_collection()
 
-    def get_model_type(self) -> Type[unit_of_work.T]:
+    def get_model_type(self) -> type[unit_of_work.T]:
         return self._entity_type
 
     def query(self) -> Iterator[unit_of_work.T]:
@@ -60,7 +60,7 @@ class MongoRepository(unit_of_work.AbstractRepository):
 
     def find_by_id(
         self, entity_id: unit_of_work.U
-    ) -> Optional[unit_of_work.T]:
+    ) -> unit_of_work.T | None:
         cursor = self.collection.find({"_id": entity_id.key()})
         document = next(cursor, None)
         return self._entity_type.parse_obj(document) if document else None  # type: ignore
@@ -79,7 +79,7 @@ class MongoRepository(unit_of_work.AbstractRepository):
         return self.db[self._entity_type.__name__]
 
     @staticmethod
-    def _parse_to_mongo_document(item: unit_of_work.T) -> Dict[str, Any]:
-        new_item: Dict[str, Any] = json.loads(item.json())
+    def _parse_to_mongo_document(item: unit_of_work.T) -> dict[str, Any]:
+        new_item: dict[str, Any] = json.loads(item.json())
         new_item.update({"_id": item.id.key()})
         return new_item

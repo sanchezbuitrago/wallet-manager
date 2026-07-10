@@ -1,11 +1,10 @@
-from contextvars import ContextVar
-from typing import Optional
+import contextvars
 
-_user_id_ctx: ContextVar[Optional[str]] = ContextVar("user_id", default=None)
+_user_id_ctx: contextvars.ContextVar[str | None] = contextvars.ContextVar("user_id", default=None)
 
 class UserContext:
     @staticmethod
-    def get() -> Optional[str]:
+    def get() -> str | None:
         return _user_id_ctx.get()
 
     @staticmethod

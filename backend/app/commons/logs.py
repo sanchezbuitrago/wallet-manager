@@ -1,12 +1,11 @@
 import logging
 import sys
 import inspect
-from typing import Optional
 
-from pydantic_settings import BaseSettings
+import pydantic_settings
 
 
-class _Settings(BaseSettings):
+class _Settings(pydantic_settings.BaseSettings):
     log_level: str = "INFO"
 
 
@@ -41,7 +40,7 @@ class ColorFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-_logger_instance: Optional[logging.Logger] = None  # Singleton instance
+_logger_instance: logging.Logger | None = None  # Singleton instance
 
 
 def get_logger(level: int = _LOG_LEVEL_MAP.get(_SETTINGS.log_level, logging.INFO)) -> logging.Logger:

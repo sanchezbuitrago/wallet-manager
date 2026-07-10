@@ -57,7 +57,7 @@ Shared infrastructure lives in `backend/app/commons/`:
 - `context.py` — `UserContext` (request-scoped user ID via `contextvars`)
 - `standard_types.py` — `ApiResponse`, `ApiError`, `IdGenerator`
 - `formatters.py` — `format_http_response()` for consistent JSON envelope
-- `base_types.py` — `ValueObject`, `EntityId`, `Aggregate`, `ForeignAggregate`
+- `base_types.py` — `ValueObject`, `EntityId`, `DomainEntity`, `Aggregate`, `ForeignAggregate`
 
 ### Aggregate Ownership
 

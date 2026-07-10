@@ -2,7 +2,7 @@ import pydantic
 import random
 import string
 
-from typing import Dict, Any, List
+from typing import Any
 
 from app.commons import base_types
 
@@ -18,8 +18,8 @@ class ApiError(base_types.ValueObject):
 
 class ApiResponse(base_types.ValueObject):
     success: bool
-    body: Dict[str, Any]
-    errors: List[ApiError]
+    body: dict[str, Any]
+    errors: list[ApiError]
 
 
 

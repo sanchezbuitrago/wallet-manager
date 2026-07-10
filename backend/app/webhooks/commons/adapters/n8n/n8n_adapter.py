@@ -1,15 +1,14 @@
 import abc
 import httpx
-from typing import Any
 
-from pydantic_settings import BaseSettings
+import pydantic_settings
 
 from app.commons import logs
 from app.webhooks.commons.adapters.n8n.domain import model
 
 _LOGGER = logs.get_logger()
 
-class _Settings(BaseSettings):
+class _Settings(pydantic_settings.BaseSettings):
     n8n_webhook: str
 
 

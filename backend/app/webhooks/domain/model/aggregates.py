@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+import datetime
 
 from app.commons import base_types, standard_types
 
@@ -23,5 +23,5 @@ class Message(base_types.Aggregate):
             phone_number=phone_number,
             content=content,
             message_type=message_type,
-            created_at=datetime.now(tz=timezone.utc).isoformat()
+            created_at=datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
         )
