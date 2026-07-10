@@ -12,6 +12,7 @@ _LOGGER = logs.get_logger()
 class _Settings(pydantic_settings.BaseSettings):
     mongo_uri: str
     mongo_port: str
+    mongo_db_name: str = "WalletManager"
 
 _SETTINGS = _Settings()
 
@@ -35,7 +36,7 @@ class MongoRepository(unit_of_work.AbstractRepository):
     ) -> None:
         self._entity_type: Type[unit_of_work.T] = entity_type
         self.db_client: pymongo.MongoClient = db_client
-        self.db: pymongo.collection.Database = db_client.buscalibre_scraper
+        self.db: pymongo.collection.Database = db_client[_SETTINGS.mongo_db_name]
         self.collection = self._get_collection()
 
     def get_model_type(self) -> Type[unit_of_work.T]:

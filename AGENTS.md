@@ -24,7 +24,7 @@ docker-compose up
 
 ## Environment Variables
 
-`.env-example` only documents `AUTH_SECRET_KEY`. The app actually requires more (loaded via `pydantic-settings`):
+All required variables are documented in `.env-example` (loaded via `pydantic-settings`):
 
 | Variable | Used In | Notes |
 |---|---|---|
@@ -32,6 +32,7 @@ docker-compose up
 | `ALGORITHM` | auth entrypoints, wrappers | JWT algorithm, defaults to `HS256` |
 | `MONGO_URI` | `commons/adapters/mongo_uow.py` | MongoDB connection string |
 | `MONGO_PORT` | `commons/adapters/mongo_uow.py` | MongoDB port |
+| `MONGO_DB_NAME` | `commons/adapters/mongo_uow.py` | MongoDB database name, defaults to `WalletManager` |
 | `N8N_WEBHOOK` | `webhooks/commons/adapters/n8n/n8n_adapter.py` | n8n webhook URL |
 | `REDIS_PASSWORD` | `docker-compose.yml` | For Redis service |
 
@@ -77,7 +78,7 @@ Validation errors also return HTTP 200 with `success: false` (custom exception h
 
 - **Driver:** `pymongo` (not an ORM — raw MongoDB operations)
 - **Unit of Work pattern:** `MongoUOW` → `MongoRepository`, maps entity class name to collection
-- **DB name is hardcoded** in `mongo_uow.py` as `buscalibre_scraper` — likely needs changing
+- **DB name** configurable via `MONGO_DB_NAME` env var, defaults to `WalletManager`
 
 ## External Integrations
 
@@ -91,8 +92,8 @@ These are real bugs that affect development:
 1. ~~`auth/entrypoints/web.py` imports `unit_of_work.FakeUnitOfWork`~~ — fixed, now uses `mongo_uow.MongoUOW()`
 2. ~~`commons/adapters/in_memory_uow.py` has broken import~~ — fixed, `from commons import ...` → `from app.commons import ...`
 3. Evolution API adapter has hardcoded API key, instance name, and base URL (not env-configurable)
-4. MongoDB database name hardcoded as `buscalibre_scraper`
-5. `.env-example` is incomplete — missing `ALGORITHM`, `MONGO_URI`, `MONGO_PORT`, `N8N_WEBHOOK`
+4. ~~MongoDB database name hardcoded as `buscalibre_scraper`~~ — fixed, now configurable via `MONGO_DB_NAME` env var
+5. ~~`.env-example` is incomplete~~ — fixed, now documents all required env vars
 
 ## Conventions
 
