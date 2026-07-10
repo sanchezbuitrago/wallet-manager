@@ -3,6 +3,23 @@ import sys
 import inspect
 from typing import Optional
 
+from pydantic_settings import BaseSettings
+
+
+class _Settings(BaseSettings):
+    log_level: str = "INFO"
+
+
+_SETTINGS = _Settings()
+
+_LOG_LEVEL_MAP = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+}
+
 
 class ColorFormatter(logging.Formatter):
     COLORS = {
@@ -27,7 +44,7 @@ class ColorFormatter(logging.Formatter):
 _logger_instance: Optional[logging.Logger] = None  # Singleton instance
 
 
-def get_logger(level: int = logging.INFO) -> logging.Logger:
+def get_logger(level: int = _LOG_LEVEL_MAP.get(_SETTINGS.log_level, logging.INFO)) -> logging.Logger:
     global _logger_instance
 
     if _logger_instance is not None:

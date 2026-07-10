@@ -27,7 +27,7 @@ _AUTHORIZATION_HEADER_KEY = "authorization"
 def authentication_required(function: Callable) -> Callable:
     @wraps(function)
     async def decorator(*args: Any, **kwargs: Any) -> Response:
-        print(kwargs)
+        _LOGGER.debug("kwargs: %s", kwargs)
         authorization_header = kwargs.get(_AUTHORIZATION_HEADER_KEY)
         _LOGGER.warning("VALIDATING TOKEN ##############################")
         if not authorization_header:

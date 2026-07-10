@@ -1,9 +1,12 @@
 from typing import Callable, Coroutine
+from app.commons import logs
 from app.commons.adapters import unit_of_work
 from app.webhooks.commons.adapters import evolution_api
 from app.webhooks.domain.model import commands
 from app.webhooks.commons.adapters.n8n import n8n_adapter
 from app.webhooks.commons.adapters.n8n.domain import model as n8n_model
+
+_LOGGER = logs.get_logger()
 
 
 async def process_message_upsert_event(
@@ -11,14 +14,14 @@ async def process_message_upsert_event(
         evolution_api_adapter: evolution_api.EvolutionApiAdapter,
         uow: unit_of_work.AbstractUnitOfWork
 ) -> None:
-    print("Processing new upsert event")
-    print(cmd.model_dump_json())
+    _LOGGER.info("Processing new upsert event")
+    _LOGGER.debug("Event payload: %s", cmd.model_dump_json())
     if not cmd.data.message.audio_message:
-        print("Message avoided because it is not a audio message")
+        _LOGGER.info("Message avoided because it is not a audio message")
         await evolution_api_adapter.send_text_message(jid=cmd.data.key.remote_jid, message="Actualmente solo permitimos mensajes de audio 😭")
         return
     if cmd.data.key.from_me:
-        print("Message avoided because is a message sent from me")
+        _LOGGER.info("Message avoided because is a message sent from me")
         return
 
     jid = cmd.data.key.remote_jid
@@ -61,6 +64,6 @@ async def process_event(
     if processor:
         await processor(cmd=cmd, evolution_api_adapter=evolution_api_adapter, uow=uow)
     else:
-        print("Event processor not found for event: %s" % cmd.event)
+        _LOGGER.warning("Event processor not found for event: %s", cmd.event)
 
 

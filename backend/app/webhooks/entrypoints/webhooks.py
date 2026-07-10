@@ -1,11 +1,13 @@
-import requests
 import fastapi
 import pydantic_settings
 
+from app.commons import logs
 from app.webhooks.commons.adapters import evolution_api
 from app.webhooks.domain.model import commands
 from app.webhooks.domain.services import whatsapp_events
 from app.commons.adapters import mongo_uow
+
+_LOGGER = logs.get_logger()
 
 webhooks_routes = fastapi.APIRouter()
 
@@ -22,7 +24,7 @@ async def whatsapp_webhook(request: fastapi.Request) -> fastapi.Response:
    body = await request.json()
 
    #TODO Almacenar mensajes y crear endpoint para descarga de archivos y hacer llamado desde n8n ?
-   print(body)
+   _LOGGER.debug("WhatsApp webhook body: %s", body)
 
 
    cmd = commands.WhatsappEventCommand.model_validate(body)
@@ -37,15 +39,12 @@ async def whatsapp_webhook(request: fastapi.Request) -> fastapi.Response:
 @webhooks_routes.post("/n8n")
 async def n8n_webhook(request: fastapi.Request) -> fastapi.Response:
     body = await request.json()
-    print(body)
-    print(body.get("success"))
+    _LOGGER.debug("n8n webhook body: %s", body)
+    _LOGGER.debug("n8n webhook success: %s", body.get("success"))
     evo_api = evolution_api.DefaultEvolutionApiAdapter()
     if body.get("success") == "true":
         if body["payload"].get("error_message") is not None and body["payload"].get("error_message") != "":
-            print("Error en payload")
-            print(body["payload"].get("error_message"))
-            print(body["payload"].get("error_message") is not None)
-            print(body["payload"].get("error_message") != "")
+            _LOGGER.error("Error en payload: %s", body["payload"].get("error_message"))
             await evo_api.send_text_message(jid=body["number"], message=body["payload"]["error_message"])
         else:
             amount = body["payload"]["monto"]
@@ -53,7 +52,7 @@ async def n8n_webhook(request: fastapi.Request) -> fastapi.Response:
             description = body["payload"]["descripcion"]
             movement_type = body["payload"]["tipo"]
             message = f""" Se van a cargar los siguiente datos:\n monto: {amount},\n categoria: {category},\n descripcion: {description}, \n tipo: {movement_type}"""
-            print("message", message)
+            _LOGGER.info("Sending message: %s", message)
             await evo_api.send_text_message(
                 jid=body["number"],
                 message=message

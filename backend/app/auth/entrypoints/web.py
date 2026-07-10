@@ -2,12 +2,14 @@ import http
 
 import fastapi
 import pydantic_settings
-from app.commons import context
+from app.commons import context, logs
 from app.commons.adapters import mongo_uow
 from app.auth.domain.model import commands, exceptions
 from app.commons import standard_types, wrappers, formatters
 
 from app.auth.domain.services import users, auth
+
+_LOGGER = logs.get_logger()
 
 auth_routes = fastapi.APIRouter()
 users_routes = fastapi.APIRouter()
@@ -79,7 +81,7 @@ async def do_login(create_user_request: commands.DoLoginRequest) -> fastapi.Resp
 @wrappers.authentication_required
 async def change_pin(change_pin_request: commands.ChangePINRequest, authorization: str = fastapi.Header(None)) -> fastapi.Response:
     try:
-        print(context.UserContext.get())
+        _LOGGER.info("User context: %s", context.UserContext.get())
         users.change_pin(
             uow=mongo_uow.MongoUOW(),
             cmd=change_pin_request

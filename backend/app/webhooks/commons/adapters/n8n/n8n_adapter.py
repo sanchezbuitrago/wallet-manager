@@ -4,7 +4,10 @@ from typing import Any
 
 from pydantic_settings import BaseSettings
 
+from app.commons import logs
 from app.webhooks.commons.adapters.n8n.domain import model
+
+_LOGGER = logs.get_logger()
 
 class _Settings(BaseSettings):
     n8n_webhook: str
@@ -32,9 +35,9 @@ class DefaultN8NAdapter(N8NAdapter):
 
     async def send_message_to_webhook(self, message: model.N8NMediaFile) -> None:
         try:
-            print("Calling n8n")
+            _LOGGER.info("Calling n8n webhook")
             response = await self.http_client.post(url="", json=message.model_dump_json())
-            print(response.text)
+            _LOGGER.debug("n8n response: %s", response.text)
             response.raise_for_status()
         except Exception as e:
-            print(str(e))
+            _LOGGER.error("Error calling n8n: %s", str(e))

@@ -2,7 +2,9 @@ import abc
 import httpx
 
 import pydantic
-from app.commons import base_types
+from app.commons import base_types, logs
+
+_LOGGER = logs.get_logger()
 
 _API_KEY = "4CEDBD17D969-40FD-BC87-2D60E17C9D8A"
 _EVOLUTION_API_URL = "http://evolution-api:8080"
@@ -58,31 +60,31 @@ class DefaultEvolutionApiAdapter(EvolutionApiAdapter):
                 url=_GET_PROFILE_RESOURCE,
                 json=payload,
             )
-            print("Profile ----------------")
-            print(response)
-            print(response.text)
+            _LOGGER.info("Fetching profile for %s", jid)
+            _LOGGER.debug("Profile response: %s", response)
+            _LOGGER.debug("Profile body: %s", response.text)
             if response.status_code == 200:
                 data = response.json()
-                print(data)
+                _LOGGER.debug("Profile data: %s", data)
                 numero_real = data.get("id") or data.get("wuid")
-                print(numero_real)
+                _LOGGER.debug("Resolved number: %s", numero_real)
                 if numero_real and "@s.whatsapp.net" in numero_real:
                     return numero_real
 
         except Exception as e:
-            print(f"Error al resolver el LID {jid}: {e}")
+            _LOGGER.error("Error al resolver el LID %s: %s", jid, e)
 
     async def send_text_message(self, jid: str, message: str) -> None:
-        print("Sending text message ------------------------")
+        _LOGGER.info("Sending text message to %s", jid)
         payload = {
             "number": jid,
             "text": message
         }
-        print(payload)
+        _LOGGER.debug("Message payload: %s", payload)
         http_client = get_http_client(url=_EVOLUTION_API_URL, api_key=_API_KEY)
         response = await http_client.post(_SEND_MESSAGE_RESOURCE, json=payload)
-        print(response.status_code)
-        print(response.text)
+        _LOGGER.debug("Send message status: %s", response.status_code)
+        _LOGGER.debug("Send message response: %s", response.text)
 
     async def get_media_file(self, message_id: str) -> MediaFile:
         http_client = get_http_client(_EVOLUTION_API_URL, _API_KEY)
@@ -95,7 +97,7 @@ class DefaultEvolutionApiAdapter(EvolutionApiAdapter):
         })
 
         if response.status_code == 201:
-            print(response.text)
+            _LOGGER.debug("Media file response: %s", response.text)
             return MediaFile(**response.json())
 
         raise ErrorGettingMediaFileException()
