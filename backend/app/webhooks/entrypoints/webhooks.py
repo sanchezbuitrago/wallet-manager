@@ -71,7 +71,32 @@ async def n8n_webhook(request: fastapi.Request) -> fastapi.Response:
             _LOGGER.error("Error desde n8n: %s", response.error_message)
             await evo_api.send_text_message(jid=jid, message=response.error_message)
         else:
-            money = Money(amount=response.payload.amount)
+            account_repo = uow.get_repo(entity_type=aggregates.Account)
+            account = next(account_repo.find_by(find={"user_id": response.user_id}), None)
+            if not account:
+                account = aggregates.Account.create(user_id=response.user_id)
+                account_repo.save(new_item=account)
+                _LOGGER.info("Account [%s] created for user [%s]", account.id.value, response.user_id)
+
+            amount = response.payload.amount
+            if response.payload.movement_type == "INCOME":
+                account.credit(amount=amount)
+            else:
+                account.debit(amount=amount)
+            account_repo.save(new_item=account)
+
+            movement = aggregates.Movement.create(
+                account_id=account.id.value,
+                user_id=response.user_id,
+                money=Money(amount=amount),
+                category=response.payload.category,
+                description=response.payload.description,
+                movement_type=response.payload.movement_type
+            )
+            movement_repo = uow.get_repo(entity_type=aggregates.Movement)
+            movement_repo.save(new_item=movement)
+            _LOGGER.info("Movement [%s] saved for account [%s]", movement.id.value, account.id.value)
+            money = Money(amount=amount)
             message_text = (
                 "Se van a cargar los siguiente datos:\n"
                 f"Amount: {money.amount} {money.currency}\n"

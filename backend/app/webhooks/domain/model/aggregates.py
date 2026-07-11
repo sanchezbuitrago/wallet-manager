@@ -1,8 +1,60 @@
 import datetime
-
-import pydantic
+import decimal
 
 from app.commons import base_types, standard_types
+
+
+class MovementId(base_types.EntityId):
+    id: str
+
+
+class Movement(base_types.Aggregate):
+    id: MovementId
+    account_id: str
+    user_id: str
+    money: base_types.Money
+    category: str
+    description: str
+    movement_type: str
+    created_at: str
+
+    @staticmethod
+    def create(account_id: str, user_id: str, money: base_types.Money,
+               category: str, description: str, movement_type: str) -> "Movement":
+        return Movement(
+            id=MovementId(id=standard_types.IdGenerator.generate()),
+            account_id=account_id,
+            user_id=user_id,
+            money=money,
+            category=category,
+            description=description,
+            movement_type=movement_type,
+            created_at=datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        )
+
+
+class AccountId(base_types.EntityId):
+    id: str
+
+
+class Account(base_types.Aggregate):
+    id: AccountId
+    user_id: str
+    balance: base_types.Money
+
+    @staticmethod
+    def create(user_id: str) -> "Account":
+        return Account(
+            id=AccountId(id=standard_types.IdGenerator.generate()),
+            user_id=user_id,
+            balance=base_types.Money(amount=decimal.Decimal("0"))
+        )
+
+    def credit(self, amount: decimal.Decimal) -> None:
+        self.balance.amount += amount
+
+    def debit(self, amount: decimal.Decimal) -> None:
+        self.balance.amount -= amount
 
 
 class ProcessingResult(base_types.ValueObject):
