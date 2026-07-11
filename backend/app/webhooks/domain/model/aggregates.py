@@ -13,6 +13,8 @@ class Movement(base_types.Aggregate):
     account_id: str
     user_id: str
     money: base_types.Money
+    opening_balance: base_types.Money
+    closing_balance: base_types.Money
     category: str
     description: str
     movement_type: str
@@ -20,12 +22,15 @@ class Movement(base_types.Aggregate):
 
     @staticmethod
     def create(account_id: str, user_id: str, money: base_types.Money,
+               opening_balance: base_types.Money, closing_balance: base_types.Money,
                category: str, description: str, movement_type: str) -> "Movement":
         return Movement(
             id=MovementId(id=standard_types.IdGenerator.generate()),
             account_id=account_id,
             user_id=user_id,
             money=money,
+            opening_balance=opening_balance,
+            closing_balance=closing_balance,
             category=category,
             description=description,
             movement_type=movement_type,

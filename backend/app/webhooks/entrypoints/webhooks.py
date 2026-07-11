@@ -79,16 +79,20 @@ async def n8n_webhook(request: fastapi.Request) -> fastapi.Response:
                 _LOGGER.info("Account [%s] created for user [%s]", account.id.value, response.user_id)
 
             amount = response.payload.amount
+            opening_balance = Money(amount=account.balance.amount)
             if response.payload.movement_type == "INCOME":
                 account.credit(amount=amount)
             else:
                 account.debit(amount=amount)
+            closing_balance = Money(amount=account.balance.amount)
             account_repo.save(new_item=account)
 
             movement = aggregates.Movement.create(
                 account_id=account.id.value,
                 user_id=response.user_id,
                 money=Money(amount=amount),
+                opening_balance=opening_balance,
+                closing_balance=closing_balance,
                 category=response.payload.category,
                 description=response.payload.description,
                 movement_type=response.payload.movement_type
