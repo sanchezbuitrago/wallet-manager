@@ -4,8 +4,8 @@ from typing import Any, Iterator
 import pymongo
 import pydantic_settings
 
+from app.commons import base_types, logs
 from app.commons.adapters import unit_of_work
-from app.commons import logs
 
 _LOGGER = logs.get_logger()
 
@@ -52,11 +52,21 @@ class MongoRepository(unit_of_work.AbstractRepository):
             yield self._entity_type.parse_obj(document)
 
     def save(self, new_item: unit_of_work.T) -> None:
-        self.collection.update_one(
-            filter={"_id": new_item.id.key()},
-            update={"$set": self._parse_to_mongo_document(item=new_item)},
-            upsert=True,
-        )
+        self._assert_not_readonly(item=new_item)
+        existing = self.collection.find_one({"_id": new_item.id.key()}, projection=["_id"])
+        if existing:
+            expected_version = new_item.version
+            new_item.version = expected_version + 1
+            result = self.collection.update_one(
+                filter={"_id": new_item.id.key(), "version": expected_version},
+                update={"$set": self._parse_to_mongo_document(item=new_item)},
+            )
+            if result.matched_count == 0:
+                raise base_types.OptimisticLockError(
+                    f"Entity [{new_item.id.key()}] was modified by another process"
+                )
+        else:
+            self.collection.insert_one(self._parse_to_mongo_document(item=new_item))
 
     def find_by_id(
         self, entity_id: unit_of_work.U

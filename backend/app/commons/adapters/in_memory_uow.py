@@ -1,6 +1,6 @@
 from typing import Any, Iterator
 
-from app.commons import logs, unit_of_work
+from app.commons import base_types, logs, unit_of_work
 
 _LOGGER = logs.get_logger()
 
@@ -31,10 +31,19 @@ class InMemoryRepository(unit_of_work.AbstractRepository):
         raise NotImplementedError()
 
     def save(self, new_item: unit_of_work.T) -> None:
-        if self.db_session.get(self._entity_type.__name__):
-            self.db_session[self._entity_type.__name__].update(
-                {new_item.id.key(): new_item.dict()}
-            )
+        self._assert_not_readonly(item=new_item)
+        store = self.db_session.get(self._entity_type.__name__)
+        if store:
+            existing = store.get(new_item.id.key())
+            if existing:
+                expected_version = existing.get("version", 1)
+                if new_item.version != expected_version:
+                    raise base_types.OptimisticLockError(
+                        f"Entity [{new_item.id.key()}] version conflict: "
+                        f"expected {expected_version}, got {new_item.version}"
+                    )
+                new_item.version = expected_version + 1
+            store.update({new_item.id.key(): new_item.dict()})
         else:
             self.db_session.update(
                 {self._entity_type.__name__: {new_item.id.key(): new_item.dict()}}

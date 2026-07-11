@@ -28,15 +28,18 @@ class DomainEntity(pydantic.BaseModel):
     id: EntityId
 
 
-class Aggregate(DomainEntity):
+class OptimisticLockError(Exception):
     pass
+
+
+class Aggregate(DomainEntity):
+    version: int = 1
 
 
 class ForeignAggregate(DomainEntity):
     """Base class for entities that reference an aggregate owned by another context.
     Semantically identical to Aggregate, but signals that this entity's lifecycle
     is managed elsewhere."""
-    pass
 
 
 class PhoneNumber(pydantic.BaseModel):

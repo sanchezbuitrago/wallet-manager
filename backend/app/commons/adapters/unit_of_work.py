@@ -8,9 +8,13 @@ U = TypeVar("U", bound=base_types.EntityId)
 
 
 class AbstractRepository(abc.ABC, Generic[T]):
-    @abc.abstractmethod
-    def __init__(self, uow: "AbstractUnitOfWork") -> None:
-        raise NotImplementedError()
+
+    def _assert_not_readonly(self, item: T) -> None:
+        if isinstance(item, base_types.ForeignAggregate):
+            raise TypeError(
+                f"Cannot save read-only entity [{item.id.key()}] of type {type(item).__name__}"
+            )
+
 
     @abc.abstractmethod
     def get_model_type(self) -> type[T]:
