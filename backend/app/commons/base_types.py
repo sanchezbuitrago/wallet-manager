@@ -1,3 +1,5 @@
+import decimal
+
 import pydantic
 
 
@@ -40,3 +42,8 @@ class ForeignAggregate(DomainEntity):
 class PhoneNumber(pydantic.BaseModel):
     country_code: str
     number: str
+
+
+class Money(pydantic.BaseModel):
+    amount: decimal.Decimal
+    currency: str = "COP"

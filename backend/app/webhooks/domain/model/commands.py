@@ -24,3 +24,20 @@ class WhatsappEventCommand(base_types.ValueObject):
     instance: str
     data: DataEvent
     sender: str
+
+
+import decimal
+
+class MovementPayload(base_types.ValueObject):
+    amount: decimal.Decimal
+    category: str = ""
+    description: str = ""
+    movement_type: str = ""
+
+
+class N8NWebhookResponse(base_types.ValueObject):
+    user_id: str
+    message_id: str
+    success: bool
+    payload: MovementPayload = pydantic.Field(default_factory=MovementPayload)
+    error_message: str = ""

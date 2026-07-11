@@ -4,7 +4,8 @@ import pydantic_settings
 from app.commons import logs
 from app.commons.adapters import media_store, mongo_uow
 from app.webhooks.commons.adapters import evolution_api
-from app.webhooks.domain.model import commands
+from app.commons.base_types import Money
+from app.webhooks.domain.model import commands, aggregates
 from app.webhooks.domain.services import whatsapp_events
 
 _LOGGER = logs.get_logger()
@@ -39,26 +40,54 @@ async def whatsapp_webhook(request: fastapi.Request) -> fastapi.Response:
 
 @webhooks_routes.post("/n8n")
 async def n8n_webhook(request: fastapi.Request) -> fastapi.Response:
-    body = await request.json()
-    _LOGGER.debug("n8n webhook body: %s", body)
-    _LOGGER.debug("n8n webhook success: %s", body.get("success"))
+    data = await request.json()
+    _LOGGER.info("n8n webhook body: %s", data)
     evo_api = evolution_api.DefaultEvolutionApiAdapter()
-    if body.get("success") == "true":
-        if body["payload"].get("error_message") is not None and body["payload"].get("error_message") != "":
-            _LOGGER.error("Error en payload: %s", body["payload"].get("error_message"))
-            await evo_api.send_text_message(jid=body["number"], message=body["payload"]["error_message"])
+    uow = mongo_uow.MongoUOW()
+
+    response = commands.N8NWebhookResponse.model_validate(data)
+
+    message_repo = uow.get_repo(entity_type=aggregates.Message)
+    message = message_repo.find_by_id(entity_id=aggregates.MessageId(id=response.message_id))
+
+    if not message:
+        _LOGGER.error("Message [%s] not found for user [%s]", response.message_id, response.user_id)
+        return fastapi.Response(status_code=200)
+
+    jid = message.remote_jid
+
+    if response.success:
+        message.processing_result = aggregates.ProcessingResult(
+            success=True,
+            money=Money(amount=response.payload.amount),
+            category=response.payload.category,
+            description=response.payload.description,
+            movement_type=response.payload.movement_type,
+            error_message=response.error_message
+        )
+        message_repo.save(new_item=message)
+
+        if response.error_message:
+            _LOGGER.error("Error desde n8n: %s", response.error_message)
+            await evo_api.send_text_message(jid=jid, message=response.error_message)
         else:
-            amount = body["payload"]["monto"]
-            category = body["payload"]["categoria"]
-            description = body["payload"]["descripcion"]
-            movement_type = body["payload"]["tipo"]
-            message = f""" Se van a cargar los siguiente datos:\n monto: {amount},\n categoria: {category},\n descripcion: {description}, \n tipo: {movement_type}"""
-            _LOGGER.info("Sending message: %s", message)
-            await evo_api.send_text_message(
-                jid=body["number"],
-                message=message
+            money = Money(amount=response.payload.amount)
+            message_text = (
+                "Se van a cargar los siguiente datos:\n"
+                f"Amount: {money.amount} {money.currency}\n"
+                f"Category: {response.payload.category}\n"
+                f"Description: {response.payload.description}\n"
+                f"MovementType: {response.payload.movement_type}"
             )
+            _LOGGER.info("Sending message: %s", message_text)
+            await evo_api.send_text_message(jid=jid, message=message_text)
     else:
-        await evo_api.send_text_message(jid=body["number"], message="No se pudo procesar el mensaje de manera correctamente. Intenta de nuevo")
+        _LOGGER.error("Error desde n8n: %s", response.error_message)
+        message.processing_result = aggregates.ProcessingResult(
+            success=False,
+            error_message=response.error_message
+        )
+        message_repo.save(new_item=message)
+        await evo_api.send_text_message(jid=jid, message=response.error_message)
 
     return fastapi.Response(status_code=200)

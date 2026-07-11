@@ -52,6 +52,7 @@ async def process_message_upsert_event(
     message = aggregates.Message.create(
         user_id=user.id.value,
         phone_number=number,
+        remote_jid=jid,
         content="audio",
         message_type="AUDIO",
         media_url=media_url
@@ -63,8 +64,8 @@ async def process_message_upsert_event(
     await n8n.send_message_to_webhook(
         message=n8n_model.N8NMediaFile(
             type=n8n_model.MessageType.AUDIO,
-            number=jid,
             user_id=user.id.value,
+            message_id=message.id.value,
             media_file=n8n_model.MediaFile(
                 file_name=media_file.file_name,
                 media_type=media_file.media_type,
