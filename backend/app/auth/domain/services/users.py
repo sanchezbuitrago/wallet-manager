@@ -16,16 +16,16 @@ def create_user(
     if user:
         _LOGGER.info("User with email [%s] already exist with id [%s]", cmd.email, user.id.value)
         raise exceptions.UserAlreadyExistError()
-    else:
-        new_user = aggregates.User.create(
-            first_names=cmd.first_names,
-            last_names=cmd.last_names,
-            pin=cmd.pin,
-            phone_number=cmd.phone_number,
-            email=cmd.email
-        )
-        repo.save(new_item=new_user)
-        _LOGGER.info("User with email [%s] created", cmd.email)
+
+    new_user = aggregates.User.create(
+        first_names=cmd.first_names,
+        last_names=cmd.last_names,
+        pin=cmd.pin,
+        phone_number=cmd.phone_number,
+        email=cmd.email
+    )
+    repo.save(new_item=new_user)
+    _LOGGER.info("User with email [%s] created", cmd.email)
 
 
 def find_user_by_phone(

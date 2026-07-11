@@ -57,6 +57,7 @@ def do_login(
 ) -> dtos.LoginResponse:
     _LOGGER.info("Try to do login with email [%s]", cmd.email)
     repo = uow.get_repo(entity_type=aggregates.User)
+
     user: aggregates.User = next(repo.find_by(find={"email": cmd.email}), None)
     if not user:
         _LOGGER.info("The email [%s] is not registered", cmd.email)

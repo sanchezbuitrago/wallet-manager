@@ -2,10 +2,10 @@ import fastapi
 import pydantic_settings
 
 from app.commons import logs
+from app.commons.adapters import media_store, mongo_uow
 from app.webhooks.commons.adapters import evolution_api
 from app.webhooks.domain.model import commands
 from app.webhooks.domain.services import whatsapp_events
-from app.commons.adapters import mongo_uow
 
 _LOGGER = logs.get_logger()
 
@@ -31,7 +31,8 @@ async def whatsapp_webhook(request: fastapi.Request) -> fastapi.Response:
    await whatsapp_events.process_event(
        cmd=cmd,
        evolution_api_adapter=evolution_api.DefaultEvolutionApiAdapter(),
-       uow=mongo_uow.MongoUOW()
+       uow=mongo_uow.MongoUOW(),
+       media_adapter=media_store.LocalMediaAdapter()
    )
    return fastapi.Response(status_code=200)
 

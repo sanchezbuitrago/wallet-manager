@@ -35,6 +35,7 @@ All required variables are documented in `.env-example` (loaded via `pydantic-se
 | `MONGO_DB_NAME` | `commons/adapters/mongo_uow.py` | MongoDB database name, defaults to `WalletManager` |
 | `N8N_WEBHOOK` | `webhooks/commons/adapters/n8n/n8n_adapter.py` | n8n webhook URL |
 | `REDIS_PASSWORD` | `docker-compose.yml` | For Redis service |
+| `MEDIA_STORAGE_DIR` | `commons/adapters/media_store.py` | Media file storage directory, defaults to `/app/storage/media` |
 
 ## Architecture
 
@@ -128,3 +129,4 @@ These are real bugs that affect development:
 - No pre-commit hooks
 - Dependencies managed via `requirements.txt` (no Poetry/Pipenv)
 - Logger uses singleton `ColorFormatter` with ANSI colors (`commons/logs.py`)
+- **Repository instantiation rule:** When a service function needs a repository via UoW, instantiate it at the top of the function, right after the initial log, before any business logic. Never scatter `get_repo()` calls throughout the function body.

@@ -34,6 +34,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+      - media_storage:/app/storage/media
     restart: always
     env_file:
       - .env
@@ -118,6 +119,7 @@ volumes:
   evolution_instances:
   mongo_data:
   n8n_data:
+  media_storage:
 
 #  traefik:
 #    image: "traefik"
