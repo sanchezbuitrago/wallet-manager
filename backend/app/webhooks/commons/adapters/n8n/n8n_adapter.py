@@ -12,6 +12,9 @@ class _Settings(pydantic_settings.BaseSettings):
     n8n_webhook: str
 
 
+_SETTINGS = _Settings()
+
+
 def get_http_client(url: str) -> httpx.AsyncClient:
     return httpx.AsyncClient(
         base_url=url,

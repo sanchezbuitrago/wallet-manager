@@ -2,16 +2,23 @@ import abc
 import httpx
 
 import pydantic
+import pydantic_settings
 from app.commons import base_types, logs
 
 _LOGGER = logs.get_logger()
 
-_API_KEY = "4CEDBD17D969-40FD-BC87-2D60E17C9D8A"
-_EVOLUTION_API_URL = "http://evolution-api:8080"
-_INSTANCE_NAME = "WalletManager"
-_GET_PROFILE_RESOURCE = f"/chat/fetchProfile/{_INSTANCE_NAME}"
-_SEND_MESSAGE_RESOURCE = f"/message/sendText/{_INSTANCE_NAME}"
-_GET_MEDIA_FILE_RESOURCE = f"/chat/getBase64FromMediaMessage/{_INSTANCE_NAME}"
+
+class _Settings(pydantic_settings.BaseSettings):
+    evolution_api_key: str
+    evolution_api_url: str
+    evolution_instance: str
+
+
+_SETTINGS = _Settings()
+
+_GET_PROFILE_RESOURCE = f"/chat/fetchProfile/{_SETTINGS.evolution_instance}"
+_SEND_MESSAGE_RESOURCE = f"/message/sendText/{_SETTINGS.evolution_instance}"
+_GET_MEDIA_FILE_RESOURCE = f"/chat/getBase64FromMediaMessage/{_SETTINGS.evolution_instance}"
 
 class ErrorGettingMediaFileException(Exception):
     ...
@@ -55,7 +62,7 @@ class DefaultEvolutionApiAdapter(EvolutionApiAdapter):
         }
 
         try:
-            http_client = get_http_client(_EVOLUTION_API_URL, _API_KEY)
+            http_client = get_http_client(_SETTINGS.evolution_api_url, _SETTINGS.evolution_api_key)
             response = await http_client.post(
                 url=_GET_PROFILE_RESOURCE,
                 json=payload,
@@ -81,13 +88,13 @@ class DefaultEvolutionApiAdapter(EvolutionApiAdapter):
             "text": message
         }
         _LOGGER.debug("Message payload: %s", payload)
-        http_client = get_http_client(url=_EVOLUTION_API_URL, api_key=_API_KEY)
+        http_client = get_http_client(url=_SETTINGS.evolution_api_url, api_key=_SETTINGS.evolution_api_key)
         response = await http_client.post(_SEND_MESSAGE_RESOURCE, json=payload)
         _LOGGER.debug("Send message status: %s", response.status_code)
         _LOGGER.debug("Send message response: %s", response.text)
 
     async def get_media_file(self, message_id: str) -> MediaFile:
-        http_client = get_http_client(_EVOLUTION_API_URL, _API_KEY)
+        http_client = get_http_client(_SETTINGS.evolution_api_url, _SETTINGS.evolution_api_key)
         response = await http_client.post(_GET_MEDIA_FILE_RESOURCE, json={
             "message": {
                 "key": {

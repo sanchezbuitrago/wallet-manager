@@ -34,6 +34,9 @@ All required variables are documented in `.env-example` (loaded via `pydantic-se
 | `MONGO_PORT` | `commons/adapters/mongo_uow.py` | MongoDB port |
 | `MONGO_DB_NAME` | `commons/adapters/mongo_uow.py` | MongoDB database name, defaults to `WalletManager` |
 | `N8N_WEBHOOK` | `webhooks/commons/adapters/n8n/n8n_adapter.py` | n8n webhook URL |
+| `EVOLUTION_API_KEY` | `webhooks/commons/adapters/evolution_api.py` | Evolution API auth key |
+| `EVOLUTION_API_URL` | `webhooks/commons/adapters/evolution_api.py` | Evolution API base URL |
+| `EVOLUTION_INSTANCE` | `webhooks/commons/adapters/evolution_api.py` | Evolution API instance name |
 | `REDIS_PASSWORD` | `docker-compose.yml` | For Redis service |
 | `MEDIA_STORAGE_DIR` | `commons/adapters/media_store.py` | Media file storage directory, defaults to `/app/storage/media` |
 
@@ -117,7 +120,7 @@ These are real bugs that affect development:
 
 1. ~~`auth/entrypoints/web.py` imports `unit_of_work.FakeUnitOfWork`~~ — fixed, now uses `mongo_uow.MongoUOW()`
 2. ~~`commons/adapters/in_memory_uow.py` has broken import~~ — fixed, `from commons import ...` → `from app.commons import ...`
-3. Evolution API adapter has hardcoded API key, instance name, and base URL (not env-configurable)
+3. ~~Evolution API adapter has hardcoded API key, instance name, and base URL (not env-configurable)~~ — fixed, now configurable via `EVOLUTION_API_KEY`, `EVOLUTION_API_URL`, `EVOLUTION_INSTANCE` env vars
 4. ~~MongoDB database name hardcoded as `buscalibre_scraper`~~ — fixed, now configurable via `MONGO_DB_NAME` env var
 5. ~~`.env-example` is incomplete~~ — fixed, now documents all required env vars
 
