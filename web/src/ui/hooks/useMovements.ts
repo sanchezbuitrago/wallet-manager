@@ -87,6 +87,13 @@ export function useDashboard(accountId: string | null) {
     statsStore.fetchByCategory(accountId);
   }, [accountId]);
 
+  const fetchByCategory = useCallback(
+    (from_date?: string, to_date?: string) => {
+      if (accountId) statsStore.fetchByCategory(accountId, from_date, to_date);
+    },
+    [accountId],
+  );
+
   return {
     account: selected,
     summary,
@@ -94,5 +101,6 @@ export function useDashboard(accountId: string | null) {
     weekly,
     byCategory,
     loading: sLoading || mLoading || wLoading || cLoading,
+    fetchByCategory,
   };
 }

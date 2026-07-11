@@ -11,47 +11,53 @@ export function Navbar() {
   if (!isAuthenticated) return null;
 
   const navItems = [
-    { label: "Dashboard", path: "/" },
-    { label: "Movements", path: "/movements" },
+    { label: "Resumen", path: "/" },
+    { label: "Movimientos", path: "/movements" },
   ];
 
   return (
-    <nav className="border-b border-noir-800 bg-noir-900">
+    <nav className="sticky top-0 z-50 border-b border-noir-800/60 bg-noir-950/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           <button
             onClick={() => setLocation("/")}
-            className="text-lg font-bold tracking-tight text-noir-100"
+            className="flex items-center gap-2 text-lg font-bold tracking-tight text-noir-100 transition-opacity hover:opacity-80"
           >
-            WM
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-noir-100 to-noir-300">
+              <span className="text-xs font-bold text-noir-950">WM</span>
+            </div>
           </button>
-          {navItems.map((item) => {
-            const active = location === item.path;
-            return (
-              <button
-                key={item.path}
-                onClick={() => setLocation(item.path)}
-                className={`text-sm transition-colors hover:text-noir-100 ${
-                  active ? "text-noir-100 font-semibold" : "text-noir-400"
-                }`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
+          <div className="flex items-center gap-1">
+            {navItems.map((item) => {
+              const active = location === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => setLocation(item.path)}
+                  className={`relative rounded-lg px-3 py-1.5 text-sm transition-all duration-200 ${
+                    active
+                      ? "bg-noir-800/60 text-noir-100 font-medium"
+                      : "text-noir-400 hover:bg-noir-800/30 hover:text-noir-200"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {accounts.length > 0 && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-lg border border-noir-800/40 bg-noir-900/40 px-3 py-1.5">
               <label className="text-xs text-noir-500">Cuenta</label>
               <select
                 value={selected?.id ?? ""}
                 onChange={(e) => selectAccount(e.target.value)}
-                className="rounded border border-noir-700 bg-noir-950 px-2 py-1.5 text-sm text-noir-300 focus:border-noir-400 focus:outline-none"
+                className="bg-transparent text-sm text-noir-300 focus:outline-none"
               >
                 {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
+                  <option key={a.id} value={a.id} className="bg-noir-900">
                     {a.id}
                   </option>
                 ))}
@@ -60,9 +66,9 @@ export function Navbar() {
           )}
           <button
             onClick={logout}
-            className="rounded bg-noir-800 px-3 py-1.5 text-sm text-noir-300 transition-colors hover:bg-noir-700 hover:text-noir-100"
+            className="rounded-lg px-3 py-1.5 text-sm text-noir-400 transition-all duration-200 hover:bg-noir-800/60 hover:text-noir-200"
           >
-            Logout
+            Cerrar sesión
           </button>
         </div>
       </div>

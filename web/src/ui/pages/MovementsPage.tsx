@@ -11,15 +11,22 @@ export function MovementsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-noir-100">Movements</h2>
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-noir-100">
+          Movimientos
+        </h2>
+        <p className="mt-1 text-sm text-noir-500">
+          Historial de transacciones
+        </p>
+      </div>
       <MovementTable items={page.items} />
       {page.next_cursor && (
         <div className="flex justify-center">
           <button
             onClick={() => loadMore(page.next_cursor!)}
-            className="rounded border border-noir-700 bg-noir-900 px-4 py-2 text-sm text-noir-300 transition-colors hover:bg-noir-800"
+            className="btn-ghost"
           >
-            Load more
+            Cargar más
           </button>
         </div>
       )}

@@ -162,11 +162,14 @@ export const statsStore = {
     }
   },
 
-  fetchByCategory: async (accountId: string) => {
+  fetchByCategory: async (accountId: string, from_date?: string, to_date?: string) => {
     byCategoryStore.setLoading();
     try {
+      const params = new URLSearchParams({ account_id: accountId });
+      if (from_date) params.set("from_date", from_date);
+      if (to_date) params.set("to_date", to_date);
       const res = await api.get<{ items: CategoryStatData[] }>(
-        `/analytics/stats/by-category?account_id=${accountId}`,
+        `/analytics/stats/by-category?${params}`,
       );
       if (!res.success) {
         byCategoryStore.setError(res.errors[0]?.detail || "Failed");

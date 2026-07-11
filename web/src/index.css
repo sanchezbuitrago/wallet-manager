@@ -1,3 +1,61 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  ::selection {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #e5e5e5;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #111111;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #444444;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #666666;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-noir-800/60 bg-noir-900/80 backdrop-blur-sm;
+  }
+
+  .card-hover {
+    @apply card transition-all duration-200 hover:border-noir-700/60 hover:bg-noir-900;
+  }
+
+  .input-field {
+    @apply w-full rounded-lg border border-noir-700/60 bg-noir-950/80 px-4 py-2.5 text-sm text-noir-100 placeholder-noir-600 transition-all duration-200 focus:border-noir-400 focus:outline-none focus:ring-1 focus:ring-noir-400/20;
+  }
+
+  .btn-primary {
+    @apply w-full rounded-lg bg-gradient-to-r from-noir-100 to-noir-200 px-4 py-2.5 text-sm font-medium text-noir-950 transition-all duration-200 hover:from-noir-50 hover:to-noir-100 hover:shadow-lg hover:shadow-noir-100/10 active:scale-[0.98] disabled:opacity-50;
+  }
+
+  .btn-ghost {
+    @apply rounded-lg border border-noir-700/40 bg-noir-900/60 px-4 py-2 text-sm text-noir-300 transition-all duration-200 hover:border-noir-600 hover:bg-noir-800 hover:text-noir-100;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-noir-100;
+  }
+
+  .badge-income {
+    @apply inline-flex items-center rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-400 ring-1 ring-inset ring-green-500/20;
+  }
+
+  .badge-expense {
+    @apply inline-flex items-center rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-500/20;
+  }
+}

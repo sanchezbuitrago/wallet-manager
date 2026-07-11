@@ -25,33 +25,46 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-noir-950 px-4">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-noir-800/20 blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-noir-800/20 blur-3xl" />
+      </div>
+
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-lg border border-noir-800 bg-noir-900 p-8"
+        className="relative w-full max-w-sm rounded-2xl border border-noir-800/60 bg-noir-900/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-sm"
       >
-        <h1 className="mb-6 text-center text-xl font-bold text-noir-100">
-          Wallet Manager
-        </h1>
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-noir-100 to-noir-300">
+            <span className="text-lg font-bold text-noir-950">WM</span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-noir-100">
+            Wallet Manager
+          </h1>
+          <p className="mt-1 text-xs text-noir-500">
+            Ingresa tus credenciales para continuar
+          </p>
+        </div>
 
         {error && (
-          <p className="mb-4 rounded bg-noir-800 px-3 py-2 text-sm text-noir-400">
+          <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
             {error}
-          </p>
+          </div>
         )}
 
-        <label className="mb-1 block text-xs uppercase tracking-wider text-noir-500">
-          Email
+        <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-noir-400">
+          Correo electrónico
         </label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="mb-4 w-full rounded border border-noir-700 bg-noir-950 px-3 py-2 text-sm text-noir-100 placeholder-noir-600 focus:border-noir-400 focus:outline-none"
-          placeholder="you@example.com"
+          className="input-field mb-4"
+          placeholder="tu@correo.com"
         />
 
-        <label className="mb-1 block text-xs uppercase tracking-wider text-noir-500">
+        <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-noir-400">
           PIN
         </label>
         <input
@@ -59,16 +72,12 @@ export function LoginPage() {
           value={pin}
           onChange={(e) => setPin(e.target.value)}
           required
-          className="mb-6 w-full rounded border border-noir-700 bg-noir-950 px-3 py-2 text-sm text-noir-100 placeholder-noir-600 focus:border-noir-400 focus:outline-none"
+          className="input-field mb-6"
           placeholder="••••"
         />
 
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full rounded bg-noir-100 px-4 py-2 text-sm font-medium text-noir-950 transition-colors hover:bg-noir-200 disabled:opacity-50"
-        >
-          {busy ? "Signing in…" : "Sign in"}
+        <button type="submit" disabled={busy} className="btn-primary">
+          {busy ? "Ingresando…" : "Ingresar"}
         </button>
       </form>
     </div>

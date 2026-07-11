@@ -15,40 +15,62 @@ export function DashboardPage() {
     weekly,
     byCategory,
     loading,
+    fetchByCategory,
   } = useDashboard(selectedId);
 
   if (!selectedId || loading) return <LoadingSpinner />;
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-noir-100">Dashboard</h2>
+    <div className="space-y-10">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-noir-100">
+          Resumen
+        </h2>
+        <p className="mt-1 text-sm text-noir-500">
+          Resumen de tu cuenta
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Balance"
+          label="Saldo"
           value={`$${Number(account?.balance || 0).toLocaleString()}`}
           subtitle={account?.currency || "COP"}
         />
         <StatCard
-          label="Income"
+          label="Ingresos"
           value={`$${Number(summary?.total_income || 0).toLocaleString()}`}
         />
         <StatCard
-          label="Expenses"
+          label="Gastos"
           value={`$${Number(summary?.total_expense || 0).toLocaleString()}`}
         />
         <StatCard
-          label="Transactions"
+          label="Transacciones"
           value={String(summary?.movement_count || 0)}
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {weekly && <WeeklyChart data={weekly} />}
-        <CategoryChart data={byCategory} />
+      <div>
+        <div className="mb-4">
+          <h3 className="text-base font-semibold text-noir-200">Esta semana</h3>
+          <p className="text-xs text-noir-500">Movimientos de los últimos 7 días</p>
+        </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {weekly && <WeeklyChart data={weekly} />}
+          <CategoryChart data={byCategory} onFetch={fetchByCategory} />
+        </div>
       </div>
 
-      {monthly.length > 0 && <MonthlyChart data={monthly} />}
+      {monthly.length > 0 && (
+        <div>
+          <div className="mb-4">
+            <h3 className="text-base font-semibold text-noir-200">Tendencia mensual</h3>
+            <p className="text-xs text-noir-500">Comparación de ingresos y gastos por mes</p>
+          </div>
+          <MonthlyChart data={monthly} />
+        </div>
+      )}
     </div>
   );
 }

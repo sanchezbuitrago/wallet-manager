@@ -13,17 +13,31 @@ interface WeeklyChartProps {
   data: WeeklyStatData;
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload || payload.length === 0) return null;
+  return (
+    <div className="rounded-lg border border-noir-700/60 bg-noir-900/95 px-3 py-2 shadow-xl backdrop-blur-sm">
+      <p className="mb-1 text-xs font-medium text-noir-200">{label}</p>
+      {payload.map((entry: any, i: number) => (
+        <p key={i} className="text-xs" style={{ color: entry.color }}>
+          {entry.name}: ${Number(entry.value).toLocaleString()}
+        </p>
+      ))}
+    </div>
+  );
+};
+
 export function WeeklyChart({ data }: WeeklyChartProps) {
   const chartData = data.daily_balance.map((d) => ({
     day: d.date.slice(5),
-    Income: Number(d.income),
-    Expense: Number(d.expense),
+    Ingresos: Number(d.income),
+    Gastos: Number(d.expense),
   }));
 
   return (
-    <div className="rounded-lg border border-noir-800 bg-noir-900 p-4">
+    <div className="card p-5">
       <h3 className="mb-4 text-sm font-medium text-noir-300">
-        This Week
+        Esta semana
       </h3>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={chartData}>
@@ -38,29 +52,23 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
             axisLine={{ stroke: "#333" }}
             tickLine={false}
           />
-          <Tooltip
-            contentStyle={{
-              background: "#222",
-              border: "1px solid #444",
-              borderRadius: 6,
-              color: "#eee",
-              fontSize: 13,
-            }}
-          />
+          <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ fontSize: 12, color: "#aaa" }} />
           <Line
             type="monotone"
-            dataKey="Income"
-            stroke="#16a34a"
+            dataKey="Ingresos"
+            stroke="#4ade80"
             strokeWidth={2}
-            dot={{ r: 3, fill: "#16a34a" }}
+            dot={{ r: 3, fill: "#4ade80", strokeWidth: 0 }}
+            activeDot={{ r: 5, strokeWidth: 0 }}
           />
           <Line
             type="monotone"
-            dataKey="Expense"
-            stroke="#dc2626"
+            dataKey="Gastos"
+            stroke="#f87171"
             strokeWidth={2}
-            dot={{ r: 3, fill: "#dc2626" }}
+            dot={{ r: 3, fill: "#f87171", strokeWidth: 0 }}
+            activeDot={{ r: 5, strokeWidth: 0 }}
           />
         </LineChart>
       </ResponsiveContainer>

@@ -17,20 +17,12 @@ interface MonthlyChartProps {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload || payload.length === 0) return null;
   return (
-    <div
-      style={{
-        background: "#222",
-        border: "1px solid #444",
-        borderRadius: 6,
-        padding: "6px 12px",
-        fontSize: 13,
-      }}
-    >
-      <div style={{ color: "#eee", marginBottom: 4 }}>{label}</div>
+    <div className="rounded-lg border border-noir-700/60 bg-noir-900/95 px-3 py-2 shadow-xl backdrop-blur-sm">
+      <p className="mb-1 text-xs font-medium text-noir-200">{label}</p>
       {payload.map((entry: any, i: number) => (
-        <div key={i} style={{ color: entry.fill }}>
+        <p key={i} className="text-xs" style={{ color: entry.fill || entry.color }}>
           {entry.name}: ${Number(entry.value).toLocaleString()}
-        </div>
+        </p>
       ))}
     </div>
   );
@@ -39,14 +31,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function MonthlyChart({ data }: MonthlyChartProps) {
   const chartData = data.map((d) => ({
     month: format(new Date(d.year, d.month - 1), "MMM"),
-    Income: Number(d.income),
-    Expense: Number(d.expense),
+    Ingresos: Number(d.income),
+    Gastos: Number(d.expense),
   }));
 
   return (
-    <div className="rounded-lg border border-noir-800 bg-noir-900 p-4">
+    <div className="card p-5">
       <h3 className="mb-4 text-sm font-medium text-noir-300">
-        Monthly Overview
+        Resumen mensual
       </h3>
       <ResponsiveContainer width="100%" height={250}>
         <BarChart data={chartData}>
@@ -65,18 +57,20 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
             cursor={false}
             content={<CustomTooltip />}
           />
-          <Legend
-            wrapperStyle={{ fontSize: 12, color: "#aaa" }}
+          <Legend wrapperStyle={{ fontSize: 12, color: "#aaa" }} />
+          <Bar
+            dataKey="Ingresos"
+            fill="#4ade80"
+            fillOpacity={0.8}
+            radius={[6, 6, 0, 0]}
+            barSize={20}
           />
           <Bar
-            dataKey="Income"
-            fill="#16a34a"
-            radius={[4, 4, 0, 0]}
-          />
-          <Bar
-            dataKey="Expense"
-            fill="#dc2626"
-            radius={[4, 4, 0, 0]}
+            dataKey="Gastos"
+            fill="#f87171"
+            fillOpacity={0.8}
+            radius={[6, 6, 0, 0]}
+            barSize={20}
           />
         </BarChart>
       </ResponsiveContainer>
