@@ -1,6 +1,7 @@
 import { useMovementDetail } from "../hooks/useMovements";
 import { useLocation } from "wouter";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { categoryLabel } from "../../core/utils/categories";
 import type { Timestamp } from "../../core/types";
 
 function formatDate(ts: Timestamp): string {
@@ -40,7 +41,7 @@ export function MovementDetailPage({ id }: { id: string }) {
                 Detalle del movimiento
               </h2>
               <p className="mt-1 text-sm text-noir-500">
-                {movement.category} &middot; {formatDate(movement.created_at)}
+                {categoryLabel(movement.category)} &middot; {formatDate(movement.created_at)}
               </p>
             </div>
             <span className={isIncome ? "badge-income" : "badge-expense"}>
@@ -75,7 +76,7 @@ export function MovementDetailPage({ id }: { id: string }) {
               <dt className="text-xs font-medium uppercase tracking-wider text-noir-500">
                 Categoría
               </dt>
-              <dd className="mt-1 text-noir-200">{movement.category}</dd>
+              <dd className="mt-1 text-noir-200">{categoryLabel(movement.category)}</dd>
             </div>
             <div className="rounded-lg bg-noir-800/30 p-3">
               <dt className="text-xs font-medium uppercase tracking-wider text-noir-500">

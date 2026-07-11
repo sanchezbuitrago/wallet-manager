@@ -93,6 +93,24 @@ export const movementStore = {
       return null;
     }
   },
+
+  fetchForChart: async (
+    accountId: string,
+    opts: { movement_type?: string; category?: string; from_date?: string; to_date?: string },
+  ): Promise<MovementData[]> => {
+    try {
+      const params = new URLSearchParams({ limit: "1000", account_id: accountId });
+      if (opts.movement_type) params.set("movement_type", opts.movement_type);
+      if (opts.category) params.set("category", opts.category);
+      if (opts.from_date) params.set("from_date", opts.from_date);
+      if (opts.to_date) params.set("to_date", opts.to_date);
+      const res = await api.get<MovementPageData>(`/analytics/movements?${params}`);
+      if (!res.success) return [];
+      return res.body.items;
+    } catch {
+      return [];
+    }
+  },
 };
 
 export const statsStore = {

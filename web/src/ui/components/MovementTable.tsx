@@ -1,5 +1,6 @@
 import type { MovementData, Timestamp } from "../../core/types";
 import { useLocation } from "wouter";
+import { categoryLabel } from "../../core/utils/categories";
 
 function formatDate(ts: Timestamp): string {
   return new Date(ts.value * 1000).toISOString().slice(0, 10);
@@ -50,7 +51,7 @@ export function MovementTable({ items }: MovementTableProps) {
                   {formatDate(m.created_at)}
                 </td>
                 <td className="px-5 py-3.5 text-noir-300 transition-colors group-hover:text-noir-200">
-                  {m.category}
+                  {categoryLabel(m.category)}
                 </td>
                 <td className="max-w-[200px] truncate px-5 py-3.5 text-noir-400 transition-colors group-hover:text-noir-300">
                   {m.description}

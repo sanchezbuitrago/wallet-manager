@@ -1,6 +1,6 @@
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -39,8 +39,8 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
       <h3 className="mb-4 text-sm font-medium text-noir-300">
         Esta semana
       </h3>
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={chartData}>
+      <ResponsiveContainer width="100%" height={250}>
+        <BarChart data={chartData}>
           <XAxis
             dataKey="day"
             tick={{ fill: "#888", fontSize: 12 }}
@@ -54,23 +54,9 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ fontSize: 12, color: "#aaa" }} />
-          <Line
-            type="monotone"
-            dataKey="Ingresos"
-            stroke="#4ade80"
-            strokeWidth={2}
-            dot={{ r: 3, fill: "#4ade80", strokeWidth: 0 }}
-            activeDot={{ r: 5, strokeWidth: 0 }}
-          />
-          <Line
-            type="monotone"
-            dataKey="Gastos"
-            stroke="#f87171"
-            strokeWidth={2}
-            dot={{ r: 3, fill: "#f87171", strokeWidth: 0 }}
-            activeDot={{ r: 5, strokeWidth: 0 }}
-          />
-        </LineChart>
+          <Bar dataKey="Ingresos" fill="#4ade80" fillOpacity={0.8} radius={[4, 4, 0, 0]} barSize={14} />
+          <Bar dataKey="Gastos" fill="#f87171" fillOpacity={0.8} radius={[4, 4, 0, 0]} barSize={14} />
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
