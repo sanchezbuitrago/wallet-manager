@@ -1,4 +1,4 @@
-from app.commons import base_types
+from app.commons import base_types, standard_types
 
 
 class MovementId(base_types.EntityId):
@@ -15,7 +15,7 @@ class Movement(base_types.ForeignAggregate):
     category: str
     description: str
     movement_type: str
-    created_at: str
+    created_at: standard_types.Timestamp
 
 
 class AccountId(base_types.EntityId):
@@ -26,3 +26,5 @@ class Account(base_types.ForeignAggregate):
     id: AccountId
     user_id: str
     balance: base_types.Money
+    created_at: standard_types.Timestamp
+    updated_at: standard_types.Timestamp

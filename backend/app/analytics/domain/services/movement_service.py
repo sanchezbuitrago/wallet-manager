@@ -1,4 +1,4 @@
-from app.commons import logs
+from app.commons import logs, standard_types
 from app.commons.adapters import unit_of_work
 from app.analytics.domain.model import dtos, entities
 
@@ -8,6 +8,7 @@ _LOGGER = logs.get_logger()
 def list_movements(
     uow: unit_of_work.AbstractUnitOfWork,
     user_id: str,
+    account_id: str | None = None,
     cursor: str | None = None,
     limit: int = 20,
     category: str | None = None,
@@ -20,6 +21,8 @@ def list_movements(
     repo = uow.get_repo(entity_type=entities.Movement)
 
     filters: dict = {"user_id": user_id}
+    if account_id:
+        filters["account_id"] = account_id
     if cursor:
         filters["_id"] = {"$lt": cursor}
     if category:
@@ -27,11 +30,11 @@ def list_movements(
     if movement_type:
         filters["movement_type"] = movement_type
     if from_date:
-        filters["created_at"] = filters.get("created_at", {})
-        filters["created_at"]["$gte"] = from_date
+        filters["created_at.value"] = filters.get("created_at.value", {})
+        filters["created_at.value"]["$gte"] = standard_types.Timestamp.from_string(from_date).value
     if to_date:
-        filters["created_at"] = filters.get("created_at", {})
-        filters["created_at"]["$lte"] = to_date
+        filters["created_at.value"] = filters.get("created_at.value", {})
+        filters["created_at.value"]["$lte"] = standard_types.Timestamp.from_string(to_date).value
 
     movements = list(repo.find_by(
         find=filters,

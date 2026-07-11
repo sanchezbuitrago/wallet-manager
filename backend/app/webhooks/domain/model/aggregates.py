@@ -1,4 +1,3 @@
-import datetime
 import decimal
 
 from app.commons import base_types, standard_types
@@ -18,7 +17,7 @@ class Movement(base_types.Aggregate):
     category: str
     description: str
     movement_type: str
-    created_at: str
+    created_at: standard_types.Timestamp
 
     @staticmethod
     def create(account_id: str, user_id: str, money: base_types.Money,
@@ -34,7 +33,7 @@ class Movement(base_types.Aggregate):
             category=category,
             description=description,
             movement_type=movement_type,
-            created_at=datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+            created_at=standard_types.Timestamp.now()
         )
 
 
@@ -46,20 +45,27 @@ class Account(base_types.Aggregate):
     id: AccountId
     user_id: str
     balance: base_types.Money
+    created_at: standard_types.Timestamp
+    updated_at: standard_types.Timestamp
 
     @staticmethod
     def create(user_id: str) -> "Account":
+        now = standard_types.Timestamp.now()
         return Account(
             id=AccountId(id=standard_types.IdGenerator.generate()),
             user_id=user_id,
-            balance=base_types.Money(amount=decimal.Decimal("0"))
+            balance=base_types.Money(amount=decimal.Decimal("0")),
+            created_at=now,
+            updated_at=now,
         )
 
     def credit(self, amount: decimal.Decimal) -> None:
         self.balance.amount += amount
+        self.updated_at = standard_types.Timestamp.now()
 
     def debit(self, amount: decimal.Decimal) -> None:
         self.balance.amount -= amount
+        self.updated_at = standard_types.Timestamp.now()
 
 
 class ProcessingResult(base_types.ValueObject):
@@ -84,7 +90,7 @@ class Message(base_types.Aggregate):
     message_type: str
     media_url: str | None = None
     processing_result: ProcessingResult | None = None
-    created_at: str
+    created_at: standard_types.Timestamp
 
     @staticmethod
     def create(user_id: str, phone_number: str, remote_jid: str, content: str,
@@ -97,5 +103,5 @@ class Message(base_types.Aggregate):
             content=content,
             message_type=message_type,
             media_url=media_url,
-            created_at=datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+            created_at=standard_types.Timestamp.now()
         )

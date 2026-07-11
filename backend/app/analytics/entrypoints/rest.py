@@ -10,27 +10,15 @@ _LOGGER = logs.get_logger()
 analytics_routes = fastapi.APIRouter()
 
 
-@analytics_routes.get("/accounts/myself")
+@analytics_routes.get("/accounts")
 @wrappers.authentication_required
-async def get_my_account(authorization: str = fastapi.Header(None)) -> fastapi.Response:
+async def list_accounts(authorization: str = fastapi.Header(None)) -> fastapi.Response:
     user_id = context.UserContext.get()
-    _LOGGER.info("Getting account for user [%s]", user_id)
-    account = account_service.get_account_by_user(uow=mongo_uow.MongoUOW(), user_id=user_id)
-    if not account:
-        return formatters.format_http_response(
-            success=False,
-            body={},
-            errors=[
-                standard_types.ApiError(
-                    title="Account not found",
-                    code="ANALYTICS/ACCOUNT_NOT_FOUND",
-                    detail="No account found for the current user",
-                )
-            ],
-        )
+    _LOGGER.info("Listing accounts for user [%s]", user_id)
+    accounts = account_service.list_accounts_by_user(uow=mongo_uow.MongoUOW(), user_id=user_id)
     return formatters.format_http_response(
         success=True,
-        body=account.model_dump(),
+        body={"items": [a.model_dump() for a in accounts]},
         errors=[],
     )
 
@@ -38,6 +26,7 @@ async def get_my_account(authorization: str = fastapi.Header(None)) -> fastapi.R
 @analytics_routes.get("/movements")
 @wrappers.authentication_required
 async def list_movements(
+    account_id: str | None = None,
     cursor: str | None = None,
     limit: int = 20,
     category: str | None = None,
@@ -50,6 +39,7 @@ async def list_movements(
     page = movement_service.list_movements(
         uow=mongo_uow.MongoUOW(),
         user_id=user_id,
+        account_id=account_id,
         cursor=cursor,
         limit=min(limit, 100),
         category=category,
@@ -98,6 +88,7 @@ async def get_movement(
 @analytics_routes.get("/stats/by-category")
 @wrappers.authentication_required
 async def stats_by_category(
+    account_id: str | None = None,
     category: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
@@ -107,6 +98,7 @@ async def stats_by_category(
     stats = stats_service.by_category(
         uow=mongo_uow.MongoUOW(),
         user_id=user_id,
+        account_id=account_id,
         category=category,
         from_date=from_date,
         to_date=to_date,
@@ -121,6 +113,7 @@ async def stats_by_category(
 @analytics_routes.get("/stats/monthly")
 @wrappers.authentication_required
 async def stats_monthly(
+    account_id: str | None = None,
     months: int = 6,
     authorization: str = fastapi.Header(None),
 ) -> fastapi.Response:
@@ -128,6 +121,7 @@ async def stats_monthly(
     stats = stats_service.monthly(
         uow=mongo_uow.MongoUOW(),
         user_id=user_id,
+        account_id=account_id,
         months=months,
     )
     return formatters.format_http_response(
@@ -140,6 +134,7 @@ async def stats_monthly(
 @analytics_routes.get("/stats/weekly")
 @wrappers.authentication_required
 async def stats_weekly(
+    account_id: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
     authorization: str = fastapi.Header(None),
@@ -148,6 +143,7 @@ async def stats_weekly(
     stats = stats_service.weekly(
         uow=mongo_uow.MongoUOW(),
         user_id=user_id,
+        account_id=account_id,
         from_date=from_date,
         to_date=to_date,
     )
@@ -161,6 +157,7 @@ async def stats_weekly(
 @analytics_routes.get("/stats/summary")
 @wrappers.authentication_required
 async def stats_summary(
+    account_id: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
     authorization: str = fastapi.Header(None),
@@ -169,6 +166,7 @@ async def stats_summary(
     stats = stats_service.summary(
         uow=mongo_uow.MongoUOW(),
         user_id=user_id,
+        account_id=account_id,
         from_date=from_date,
         to_date=to_date,
     )

@@ -111,6 +111,17 @@ services:
     networks:
       - n8n_evoapi
 
+  web:
+    container_name: web_wallet_manager
+    build: ../web
+    ports:
+      - "4000:80"
+    restart: always
+    networks:
+      - n8n_evoapi
+    depends_on:
+      - fastapi
+
 networks:
   n8n_evoapi:
 

@@ -1,11 +1,15 @@
 import pydantic
 
+from app.commons import standard_types
+
 
 class AccountResponse(pydantic.BaseModel):
     id: str
     user_id: str
     balance: str
     currency: str
+    created_at: standard_types.Timestamp
+    updated_at: standard_types.Timestamp
 
 
 class MovementResponse(pydantic.BaseModel):
@@ -19,7 +23,7 @@ class MovementResponse(pydantic.BaseModel):
     category: str
     description: str
     movement_type: str
-    created_at: str
+    created_at: standard_types.Timestamp
 
 
 class MovementPageResponse(pydantic.BaseModel):
