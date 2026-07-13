@@ -5,7 +5,7 @@ services:
     container_name: mongodb_wallet_manager
     image: mongo:latest
     ports:
-      - "127.0.0.1:27018:27017"
+      - "27018:27017"
     volumes:
       - mongo_data:/data/db
     networks:
@@ -21,7 +21,7 @@ services:
       ME_CONFIG_BASICAUTH_USERNAME: username
       ME_CONFIG_BASICAUTH_PASSWORD: password
     ports:
-      - "127.0.0.1:8084:8081"
+      - "8084:8081"
     depends_on:
       - mongodb
     networks:
@@ -30,7 +30,10 @@ services:
   fastapi:
     container_name: wallet_manager
     build: .
+    ports:
+      - "8000:8000"
     volumes:
+      - .:/app
       - media_storage:/app/storage/media
     restart: always
     env_file:
@@ -39,6 +42,7 @@ services:
       - n8n_evoapi
     depends_on:
       - mongodb
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   postgres:
     image: postgres:15
@@ -71,6 +75,8 @@ services:
     container_name: evolution_api_wallet_manager
     image: evoapicloud/evolution-api:v2.3.7
     restart: always
+    ports:
+      - "8080:8080"
     env_file:
       - .env
     depends_on:
@@ -85,11 +91,13 @@ services:
     image: docker.n8n.io/n8nio/n8n:latest
     container_name: n8n_wallet_manager
     restart: unless-stopped
+    ports:
+      - "5678:5678"
     environment:
-      - N8N_HOST=n8n.wallet-manager.sbapps.dev
+      - N8N_HOST=localhost
       - N8N_PORT=5678
-      - N8N_PROTOCOL=https
-      - WEBHOOK_URL=https://n8n.wallet-manager.sbapps.dev/
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
       - GENERIC_TIMEZONE=America/Bogota
     volumes:
       - n8n_data:/home/node/.n8n
@@ -101,30 +109,14 @@ services:
     build:
       context: ../web
       args:
-        VITE_API_URL: https://api.wallet-manager.sbapps.dev
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "4000:80"
     restart: always
     networks:
       - n8n_evoapi
     depends_on:
       - fastapi
-
-  caddy:
-    image: caddy:2-alpine
-    container_name: caddy_wallet_manager
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      - n8n_evoapi
-    depends_on:
-      - web
-      - fastapi
-      - n8n
 
 networks:
   n8n_evoapi:
@@ -135,5 +127,3 @@ volumes:
   mongo_data:
   n8n_data:
   media_storage:
-  caddy_data:
-  caddy_config:

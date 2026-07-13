@@ -3,8 +3,11 @@ import http
 from app.auth.entrypoints import web as auth_entrypoints
 from app.webhooks.entrypoints import webhooks as webhooks_entrypoints
 from app.analytics.entrypoints import rest as analytics_entrypoints
+from app.commons.cors import setup_cors
 
 app = fastapi.FastAPI()
+
+setup_cors(app)
 
 app.include_router(router=webhooks_entrypoints.webhooks_routes, prefix="/webhooks", tags=["Webhooks"])
 app.include_router(router=auth_entrypoints.users_routes, prefix="/users", tags=["Users"])

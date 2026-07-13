@@ -1,0 +1,11 @@
+wallet-manager.sbapps.dev {
+    reverse_proxy web:80
+}
+
+api.wallet-manager.sbapps.dev {
+    reverse_proxy fastapi:8000
+}
+
+n8n.wallet-manager.sbapps.dev {
+    reverse_proxy n8n:5678
+}
