@@ -129,8 +129,11 @@ services:
       - N8N_HOST=n8n.wallet-manager.sbapps.dev
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
-      - WEBHOOK_URL=https://n8n.wallet-manager.sbapps.dev/
+      - N8N_WEBHOOK_URL=https://n8n.wallet-manager.sbapps.dev/
       - GENERIC_TIMEZONE=America/Bogota
+      - N8N_RUNNERS_TASK_TIMEOUT=60
+      - N8N_COMPRESSION_NODE_MAX_DECOMPRESSED_SIZE_BYTES=268435456
+      - N8N_COMPRESSION_NODE_MAX_ZIP_ENTRIES=1000
     volumes:
       - n8n_data:/home/node/.n8n
     networks:
