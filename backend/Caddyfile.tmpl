@@ -9,3 +9,10 @@ api.wallet-manager.sbapps.dev {
 n8n.wallet-manager.sbapps.dev {
     reverse_proxy n8n:5678
 }
+
+evo-api.wallet-manager.sbapps.dev {
+    basicauth {
+        {{EVO_API_USER}} {{EVO_BASIC_AUTH_HASH}}
+    }
+    reverse_proxy evolution-api:8080
+}
