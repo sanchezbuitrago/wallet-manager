@@ -99,7 +99,7 @@ services:
           memory: 256M
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:1.38.1-alpine
+    image: docker.n8n.io/n8nio/n8n:latest
     container_name: n8n_wallet_manager
     restart: unless-stopped
     environment:
