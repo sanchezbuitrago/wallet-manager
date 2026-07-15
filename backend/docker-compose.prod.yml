@@ -121,31 +121,6 @@ services:
         reservations:
           memory: 256M
 
-  n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
-    container_name: n8n_wallet_manager
-    restart: unless-stopped
-    environment:
-      - N8N_HOST=n8n.wallet-manager.sbapps.dev
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=https
-      - N8N_WEBHOOK_URL=https://n8n.wallet-manager.sbapps.dev/
-      - GENERIC_TIMEZONE=America/Bogota
-      - N8N_RUNNERS_TASK_TIMEOUT=60
-      - N8N_COMPRESSION_NODE_MAX_DECOMPRESSED_SIZE_BYTES=268435456
-      - N8N_COMPRESSION_NODE_MAX_ZIP_ENTRIES=1000
-      - N8N_UNVERIFIED_PACKAGES_ENABLED=true
-    volumes:
-      - n8n_data:/home/node/.n8n
-    networks:
-      - n8n_evoapi
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
-
   web:
     container_name: web_wallet_manager
     build:
@@ -185,7 +160,6 @@ services:
     depends_on:
       - web
       - fastapi
-      - n8n
     deploy:
       resources:
         limits:
@@ -202,7 +176,6 @@ services:
       - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-30}
     volumes:
       - mongo_data:/backup/mongodb:ro
-      - n8n_data:/backup/n8n:ro
       - evolution_instances:/backup/evolution:ro
       - media_storage:/backup/media:ro
     networks:
@@ -221,7 +194,6 @@ volumes:
   postgres_data:
   evolution_instances:
   mongo_data:
-  n8n_data:
   media_storage:
   caddy_data:
   caddy_config:
