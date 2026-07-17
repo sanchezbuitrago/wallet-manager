@@ -18,6 +18,15 @@ _SETTINGS = _Settings()
 
 
 async def process(cmd: commands.WhatsappEventCommand, uow) -> None:
+    """Process an incoming WhatsApp message.
+
+    Validates the sender, downloads audio if present, runs it through
+    the AI pipeline, and emits an ApplyMovementRequested event on success.
+
+    Args:
+        cmd: The parsed WhatsApp webhook event.
+        uow: Unit of work for data access.
+    """
     user_repo = uow.get_repo(entities.User)
     message_repo = uow.get_repo(aggregates.Message)
 

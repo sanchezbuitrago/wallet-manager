@@ -1,4 +1,5 @@
-from app.commons import base_types, standard_types
+from app.commons import base_types
+from app.commons import standard_types
 
 
 class UserId(base_types.EntityId):
@@ -6,6 +7,8 @@ class UserId(base_types.EntityId):
 
 
 class User(base_types.Aggregate):
+    """User aggregate owning authentication credentials and profile data."""
+
     id: UserId
     first_names: str
     last_names: str
@@ -15,7 +18,14 @@ class User(base_types.Aggregate):
     pin: str
 
     @staticmethod
-    def create(first_names: str, last_names: str, email: str, phone_number: standard_types.PhoneNumber, pin: str) -> "User":
+    def create(
+        first_names: str,
+        last_names: str,
+        email: str,
+        phone_number: standard_types.PhoneNumber,
+        pin: str,
+    ) -> "User":
+        """Create a new user with the given profile information."""
         return User(
             id=UserId(id=standard_types.IdGenerator.generate()),
             first_names=first_names,

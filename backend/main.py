@@ -1,4 +1,5 @@
 import asyncio
+import http
 from contextlib import asynccontextmanager
 
 import fastapi
@@ -6,10 +7,11 @@ import fastapi
 from app.commons.adapters import outbox_worker
 from app.commons.cors import setup_cors
 from app.webhooks.entrypoints import webhooks as webhooks_entrypoints
-from app.auth.entrypoints.web import auth_routes, users_routes
+from app.auth.entrypoints.web import auth_routes
+from app.auth.entrypoints.web import users_routes
 from app.analytics.entrypoints.rest import analytics_routes
 
-# Import event handlers to register them with the event bus
+# Side-effect imports: registering handlers must happen before the app starts.
 import app.webhooks.entrypoints.events  # noqa: E402
 import app.account.entrypoints.events  # noqa: E402
 import app.notification.entrypoints.events  # noqa: E402
@@ -19,6 +21,7 @@ worker = outbox_worker.OutboxWorker(interval=5.0)
 
 @asynccontextmanager
 async def lifespan(fastapi_app: fastapi.FastAPI):
+    """Application lifespan: start the outbox worker on startup."""
     asyncio.create_task(worker.start())
     yield
     worker.stop()
@@ -55,9 +58,9 @@ application.include_router(
 @application.exception_handler(fastapi.exceptions.RequestValidationError)
 async def validation_exception_handler(
     request: fastapi.Request,
-    exc: fastapi.exceptions.RequestValidationError
+    exc: fastapi.exceptions.RequestValidationError,
 ):
-    import http
+    """Return validation errors in the standard API envelope format."""
     errors = exc.errors()
     return fastapi.responses.JSONResponse(
         status_code=http.HTTPStatus.OK,
@@ -68,7 +71,10 @@ async def validation_exception_handler(
                 {
                     "title": "Bad Request",
                     "code": "exception/RequestFormatError",
-                    "detail": f"{error.get('msg')} [{'.'.join(error.get('loc', []))}]"
+                    "detail": (
+                        f"{error.get('msg')} "
+                        f"[{'.'.join(error.get('loc', []))}]"
+                    )
                 } for error in errors
             ]
         }

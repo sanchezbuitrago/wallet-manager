@@ -9,6 +9,7 @@ webhooks_routes = fastapi.APIRouter()
 
 @webhooks_routes.post("/whatsapp")
 async def whatsapp_webhook(request: fastapi.Request) -> fastapi.Response:
+    """Handle incoming WhatsApp webhook events from Evolution API."""
     body = await request.json()
     cmd = commands.WhatsappEventCommand.model_validate(body)
     if cmd.event == "messages.upsert":

@@ -9,11 +9,18 @@ _LOGGER = logs.get_logger()
 
 
 class OutboxWorker:
+    """Background worker that polls the outbox and publishes events.
+
+    Runs as an asyncio task, checking for unpublished events at a
+    configurable interval and dispatching them through the EventBus.
+    """
+
     def __init__(self, interval: float = 5.0):
         self._interval = interval
         self._running = False
 
     async def start(self) -> None:
+        """Start the polling loop."""
         self._running = True
         _LOGGER.info("Outbox worker started (interval=%ss)", self._interval)
         while self._running:
@@ -21,6 +28,7 @@ class OutboxWorker:
             await asyncio.sleep(self._interval)
 
     def stop(self) -> None:
+        """Stop the polling loop."""
         self._running = False
 
     async def _process_pending(self) -> None:

@@ -2,12 +2,18 @@ import http
 
 import fastapi
 import pydantic_settings
-from app.commons import context, logs
-from app.commons.adapters import mongo_uow
-from app.auth.domain.model import commands, exceptions
-from app.commons import standard_types, wrappers, formatters
 
-from app.auth.domain.services import users, auth
+from app.commons import context
+from app.commons import logs
+from app.commons.adapters import mongo_uow
+from app.auth.domain.model import commands
+from app.auth.domain.model import exceptions
+from app.commons import standard_types
+from app.commons import wrappers
+from app.commons import formatters
+
+from app.auth.domain.services import users
+from app.auth.domain.services import auth
 
 _LOGGER = logs.get_logger()
 
@@ -24,7 +30,10 @@ _SETTINGS = _Settings()
 
 
 @users_routes.post("/")
-async def create_user(create_user_request: commands.CreateUserRequest) -> fastapi.Response:
+async def create_user(
+    create_user_request: commands.CreateUserRequest,
+) -> fastapi.Response:
+    """Register a new user account."""
     try:
         users.create_user(
             uow=mongo_uow.MongoUOW(),
@@ -50,7 +59,10 @@ async def create_user(create_user_request: commands.CreateUserRequest) -> fastap
 
 
 @auth_routes.post("/login")
-async def do_login(create_user_request: commands.DoLoginRequest) -> fastapi.Response:
+async def do_login(
+    create_user_request: commands.DoLoginRequest,
+) -> fastapi.Response:
+    """Authenticate and return JWT tokens."""
     try:
         login_response = auth.do_login(
             uow=mongo_uow.MongoUOW(),
@@ -63,7 +75,7 @@ async def do_login(create_user_request: commands.DoLoginRequest) -> fastapi.Resp
             body=login_response.model_dump(),
             errors=[]
         )
-    except (exceptions.EmailNotFoundError, exceptions.PINNotMatchError):
+    except (exceptions.EmailNotFoundError, exceptions.PinNotMatchError):
         return formatters.format_http_response(
             success=False,
             body={},
@@ -79,7 +91,11 @@ async def do_login(create_user_request: commands.DoLoginRequest) -> fastapi.Resp
 
 @users_routes.patch("/pin")
 @wrappers.authentication_required
-async def change_pin(change_pin_request: commands.ChangePINRequest, authorization: str = fastapi.Header(None)) -> fastapi.Response:
+async def change_pin(
+    change_pin_request: commands.ChangePinRequest,
+    authorization: str = fastapi.Header(None),
+) -> fastapi.Response:
+    """Change the authenticated user's PIN."""
     try:
         _LOGGER.info("User context: %s", context.UserContext.get())
         users.change_pin(

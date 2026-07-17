@@ -8,6 +8,8 @@ class MovementId(base_types.EntityId):
 
 
 class Movement(base_types.Aggregate):
+    """A single financial movement (income or expense) within an account."""
+
     id: MovementId
     account_id: str
     user_id: str
@@ -30,6 +32,7 @@ class Movement(base_types.Aggregate):
         description: str,
         movement_type: str
     ) -> "Movement":
+        """Create a new movement with a generated ID and current timestamp."""
         return Movement(
             id=MovementId(id=standard_types.IdGenerator.generate()),
             account_id=account_id,
@@ -49,6 +52,8 @@ class AccountId(base_types.EntityId):
 
 
 class Account(base_types.Aggregate):
+    """User account that holds a balance and tracks movements."""
+
     id: AccountId
     user_id: str
     balance: base_types.Money
@@ -57,6 +62,7 @@ class Account(base_types.Aggregate):
 
     @staticmethod
     def create(user_id: str) -> "Account":
+        """Create a new account with a zero balance."""
         now = standard_types.Timestamp.now()
         return Account(
             id=AccountId(id=standard_types.IdGenerator.generate()),
@@ -67,9 +73,11 @@ class Account(base_types.Aggregate):
         )
 
     def credit(self, amount: decimal.Decimal) -> None:
+        """Add funds to the account."""
         self.balance.amount += amount
         self.updated_at = standard_types.Timestamp.now()
 
     def debit(self, amount: decimal.Decimal) -> None:
+        """Deduct funds from the account."""
         self.balance.amount -= amount
         self.updated_at = standard_types.Timestamp.now()

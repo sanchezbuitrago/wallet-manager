@@ -3,6 +3,8 @@ from app.commons import standard_types
 
 
 class ProcessingResult(base_types.ValueObject):
+    """Result of processing an audio message through the AI pipeline."""
+
     success: bool
     money: base_types.Money | None = None
     category: str | None = None
@@ -16,6 +18,8 @@ class MessageId(base_types.EntityId):
 
 
 class Message(base_types.Aggregate):
+    """WhatsApp message received and processed by the webhooks context."""
+
     id: MessageId
     user_id: str
     phone_number: str
@@ -36,6 +40,7 @@ class Message(base_types.Aggregate):
         message_type: str,
         media_url: str | None = None
     ) -> "Message":
+        """Create a new incoming message."""
         return Message(
             id=MessageId(id=standard_types.IdGenerator.generate()),
             user_id=user_id,

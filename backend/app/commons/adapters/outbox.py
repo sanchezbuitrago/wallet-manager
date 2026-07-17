@@ -7,6 +7,12 @@ class OutboxEventId(base_types.EntityId):
 
 
 class OutboxEvent(base_types.DomainEntity):
+    """Event persisted to the outbox collection before publishing.
+
+    The OutboxWorker polls for unpublished events, publishes them
+    through the EventBus, and marks them as published.
+    """
+
     id: OutboxEventId
     event_type: str
     payload: dict
@@ -17,6 +23,15 @@ class OutboxEvent(base_types.DomainEntity):
 
     @staticmethod
     def create(event_type: str, payload: dict) -> "OutboxEvent":
+        """Create a new unpublished outbox event.
+
+        Args:
+            event_type: The class name of the DomainEvent.
+            payload: The serialized event data.
+
+        Returns:
+            A new OutboxEvent ready to be persisted.
+        """
         return OutboxEvent(
             id=OutboxEventId(id=standard_types.IdGenerator.generate()),
             event_type=event_type,
@@ -25,5 +40,6 @@ class OutboxEvent(base_types.DomainEntity):
         )
 
     def mark_published(self) -> None:
+        """Mark this event as published with the current timestamp."""
         self.published = True
         self.published_at = standard_types.Timestamp.now()

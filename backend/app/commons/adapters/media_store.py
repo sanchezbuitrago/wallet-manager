@@ -4,7 +4,8 @@ import os
 
 import pydantic_settings
 
-from app.commons import logs, standard_types
+from app.commons import logs
+from app.commons import standard_types
 
 _LOGGER = logs.get_logger()
 
@@ -21,12 +22,17 @@ _SETTINGS = _Settings()
 
 
 class AbstractMediaAdapter(abc.ABC):
+    """Base class for media storage adapters."""
+
     @abc.abstractmethod
     def save(self, base_64_content: str, mime_type: str) -> str:
+        """Save base64-encoded media and return its URL path."""
         ...
 
 
 class LocalMediaAdapter(AbstractMediaAdapter):
+    """Media adapter that stores files on the local filesystem."""
+
     _MIME_MAP: dict[str, tuple[str, str]] = {
         "audio/ogg": ("audio", ".ogg"),
         "audio/mpeg": ("audio", ".mp3"),
@@ -41,6 +47,18 @@ class LocalMediaAdapter(AbstractMediaAdapter):
     }
 
     def save(self, base_64_content: str, mime_type: str) -> str:
+        """Decode and store a base64-encoded media file.
+
+        Args:
+            base_64_content: The base64-encoded file content.
+            mime_type: The MIME type of the media (e.g. ``audio/ogg``).
+
+        Returns:
+            The URL path to the saved file.
+
+        Raises:
+            UnsupportedMediaTypeError: If the MIME type is not supported.
+        """
         base_type = mime_type.split(";")[0].strip()
         _LOGGER.info("Saving media with mime type %s", mime_type)
 

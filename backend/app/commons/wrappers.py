@@ -8,15 +8,18 @@ import fastapi
 import pydantic_settings
 
 from app.commons import context
-from app.commons import logs, formatters
+from app.commons import logs
+from app.commons import formatters
 from app.commons import standard_types
 from app.auth.domain.model import dtos
 
 _LOGGER = logs.get_logger()
 
+
 class _Settings(pydantic_settings.BaseSettings):
     auth_secret_key: str
     algorithm: str
+
 
 _SETTINGS = _Settings()
 
@@ -24,6 +27,17 @@ _AUTHORIZATION_HEADER_KEY = "authorization"
 
 
 def authentication_required(function: Callable) -> Callable:
+    """Decorator that validates a JWT token before executing the endpoint.
+
+    Extracts the Bearer token from the ``authorization`` header, decodes
+    it, checks expiry, and stores the user ID in ``UserContext``.
+
+    Args:
+        function: The async endpoint function to protect.
+
+    Returns:
+        The wrapped function with JWT validation.
+    """
     @functools.wraps(function)
     async def decorator(*args: Any, **kwargs: Any) -> fastapi.Response:
         _LOGGER.debug("kwargs: %s", kwargs)
@@ -45,7 +59,13 @@ def authentication_required(function: Callable) -> Callable:
             )
         try:
             _LOGGER.info("Token: %s", authorization_header)
-            token = dtos.TokenInfo.model_validate(obj=jwt.decode(authorization_header.split(" ")[-1], key=_SETTINGS.auth_secret_key, algorithms=_SETTINGS.algorithm))
+            token = dtos.TokenInfo.model_validate(
+                obj=jwt.decode(
+                    authorization_header.split(" ")[-1],
+                    key=_SETTINGS.auth_secret_key,
+                    algorithms=_SETTINGS.algorithm,
+                )
+            )
         except jwt.DecodeError as e:
             _LOGGER.warning("Token is invalid, Exception: %s", str(e))
             return formatters.format_http_response(

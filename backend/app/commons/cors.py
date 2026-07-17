@@ -1,3 +1,4 @@
+import fastapi
 from fastapi.middleware.cors import CORSMiddleware
 
 ALLOWED_ORIGINS = [
@@ -7,7 +8,12 @@ ALLOWED_ORIGINS = [
 ]
 
 
-def setup_cors(app):
+def setup_cors(app: fastapi.FastAPI) -> None:
+    """Configure CORS middleware on the given FastAPI application.
+
+    Args:
+        app: The FastAPI application instance.
+    """
     app.add_middleware(
         CORSMiddleware,
         allow_origins=ALLOWED_ORIGINS,

@@ -11,6 +11,17 @@ def format_http_response(
         errors: list[standard_types.ApiError],
         status_code: int = http.HTTPStatus.OK
 ) -> fastapi.Response:
+    """Build a standardized JSON response envelope.
+
+    Args:
+        success: Whether the request succeeded.
+        body: The response payload.
+        errors: List of errors, empty when successful.
+        status_code: HTTP status code (defaults to 200).
+
+    Returns:
+        A FastAPI Response with JSON content type.
+    """
     return fastapi.Response(
         status_code=status_code,
         content=json.dumps(

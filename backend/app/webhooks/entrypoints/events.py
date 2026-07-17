@@ -5,7 +5,8 @@ from app.webhooks.domain.model import aggregates
 
 
 @eb.event_handler(domain_events.MovementApplied)
-async def on_movement_applied(event) -> None:
+async def on_movement_applied(event: domain_events.MovementApplied) -> None:
+    """Confirm to the user that a movement was applied successfully."""
     uow = mongo_uow.MongoUOW()
     message_repo = uow.get_repo(aggregates.Message)
     message = next(
@@ -30,7 +31,10 @@ async def on_movement_applied(event) -> None:
 
 
 @eb.event_handler(domain_events.MovementApplicationFailed)
-async def on_movement_application_failed(event) -> None:
+async def on_movement_application_failed(
+    event: domain_events.MovementApplicationFailed,
+) -> None:
+    """Notify the user that the movement could not be processed."""
     uow = mongo_uow.MongoUOW()
     message_repo = uow.get_repo(aggregates.Message)
     message = next(

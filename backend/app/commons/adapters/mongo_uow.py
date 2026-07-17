@@ -31,11 +31,13 @@ def _get_client() -> pymongo.MongoClient:
 
 
 class MongoUOW(unit_of_work.AbstractUnitOfWork):
+    """MongoDB-backed unit of work with transaction support."""
+
     def __init__(self):
         super().__init__()
         self.client = _get_client()
 
-    def _create_repo(self, entity_type: type):
+    def _create_repo(self, entity_type: type) -> "MongoRepository":
         return MongoRepository(
             entity_type=entity_type,
             db_client=self.client,
@@ -58,20 +60,30 @@ class MongoUOW(unit_of_work.AbstractUnitOfWork):
 
 
 class MongoRepository(unit_of_work.AbstractRepository):
-    def __init__(self, entity_type: type, db_client: pymongo.MongoClient, uow=None):
+    """Repository implementation backed by a MongoDB collection."""
+
+    def __init__(
+        self,
+        entity_type: type,
+        db_client: pymongo.MongoClient,
+        uow: MongoUOW | None = None,
+    ):
         self._entity_type = entity_type
         self.db = db_client[_SETTINGS.mongo_db_name]
         self.collection = self.db[entity_type.__name__]
         self._uow = uow
 
     @property
-    def session(self):
+    def session(self) -> Any:
+        """Return the active MongoDB session, or None."""
         return self._uow.session if self._uow else None
 
     def get_model_type(self) -> type:
+        """Return the entity type this repository manages."""
         return self._entity_type
 
-    def save(self, new_item) -> None:
+    def save(self, new_item: base_types.Aggregate) -> None:
+        """Insert or update an entity with optimistic locking."""
         self._assert_not_readonly(new_item)
         doc = self._parse_to_mongo_document(new_item)
         existing = self.collection.find_one(
@@ -93,26 +105,28 @@ class MongoRepository(unit_of_work.AbstractRepository):
         else:
             self.collection.insert_one(doc, session=self.session)
 
-    def _assert_not_readonly(self, item) -> None:
+    def _assert_not_readonly(self, item: base_types.DomainEntity) -> None:
         if isinstance(item, base_types.ForeignAggregate):
             raise TypeError(
                 f"Cannot save read-only entity [{item.id.key()}]"
             )
 
-    def find_by_id(self, entity_id):
+    def find_by_id(self, entity_id: base_types.EntityId) -> Any | None:
+        """Find a single entity by its ID."""
         cursor = self.collection.find(
             {"_id": entity_id.key()},
             session=self.session
         )
         document = next(cursor, None)
-        return self._entity_type.parse_obj(document) if document else None
+        return self._entity_type.model_validate(document) if document else None
 
     def find_by(
         self,
         find: dict,
         sort_by: str = "created_at",
         descending: bool = True
-    ):
+    ) -> Any:
+        """Query entities matching the given filter."""
         all_documents = self.collection.find(
             find, session=self.session
         ).sort(
@@ -120,14 +134,15 @@ class MongoRepository(unit_of_work.AbstractRepository):
             pymongo.DESCENDING if descending else pymongo.ASCENDING
         )
         for document in all_documents:
-            yield self._entity_type.parse_obj(document)
+            yield self._entity_type.model_validate(document)
 
     def get_all(
         self,
         descending: bool = True,
         limit: int = 20,
         sort_by: str = "created_at"
-    ):
+    ) -> Any:
+        """Return all entities with sorting and pagination."""
         all_documents = self.collection.find(
             session=self.session
         ).sort(
@@ -135,9 +150,10 @@ class MongoRepository(unit_of_work.AbstractRepository):
             pymongo.DESCENDING if descending else pymongo.ASCENDING
         ).limit(limit=limit)
         for document in all_documents:
-            yield self._entity_type.parse_obj(document)
+            yield self._entity_type.model_validate(document)
 
-    def _parse_to_mongo_document(self, item) -> dict[str, Any]:
-        new_item = json.loads(item.json())
+    def _parse_to_mongo_document(self, item: base_types.Aggregate) -> dict[str, Any]:
+        """Serialize an entity to a MongoDB document dict."""
+        new_item = json.loads(item.model_dump_json())
         new_item.update({"_id": item.id.key()})
         return new_item

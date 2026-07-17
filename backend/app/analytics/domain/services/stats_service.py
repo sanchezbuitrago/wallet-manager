@@ -3,9 +3,12 @@ import decimal
 import time
 from collections import defaultdict
 
-from app.commons import logs, base_types, standard_types
+from app.commons import logs
+from app.commons import base_types
+from app.commons import standard_types
 from app.commons.adapters import unit_of_work
-from app.analytics.domain.model import dtos, entities
+from app.analytics.domain.model import dtos
+from app.analytics.domain.model import entities
 
 _LOGGER = logs.get_logger()
 
@@ -41,6 +44,19 @@ def by_category(
     from_date: str | None = None,
     to_date: str | None = None,
 ) -> list[dtos.CategoryStatResponse]:
+    """Aggregate movement totals grouped by category and type.
+
+    Args:
+        uow: Unit of work for data access.
+        user_id: The user to aggregate for.
+        account_id: Optional account filter.
+        category: Optional category filter.
+        from_date: Optional start date (ISO-8601).
+        to_date: Optional end date (ISO-8601).
+
+    Returns:
+        A list of category stats sorted by total descending.
+    """
     _LOGGER.info("Getting stats by category for user [%s]", user_id)
     repo = uow.get_repo(entity_type=entities.Movement)
 
@@ -68,6 +84,9 @@ def by_category(
         groups[key]["total"] += decimal.Decimal(str(m.money.amount))
         groups[key]["count"] += 1
 
+    def _sort_key(item: tuple) -> float:
+        return -float(item[1]["total"])
+
     return [
         dtos.CategoryStatResponse(
             category=cat,
@@ -75,7 +94,7 @@ def by_category(
             movement_type=mtype,
             count=data["count"],
         )
-        for (cat, mtype), data in sorted(groups.items(), key=lambda x: -float(x[1]["total"]))
+        for (cat, mtype), data in sorted(groups.items(), key=_sort_key)
     ]
 
 
@@ -85,14 +104,32 @@ def monthly(
     account_id: str | None = None,
     months: int = 6,
 ) -> list[dtos.MonthlyStatResponse]:
-    _LOGGER.info("Getting monthly stats for user [%s] for [%d] months", user_id, months)
+    """Aggregate income and expense totals by month.
+
+    Args:
+        uow: Unit of work for data access.
+        user_id: The user to aggregate for.
+        account_id: Optional account filter.
+        months: Number of months to look back.
+
+    Returns:
+        A list of monthly stats sorted most-recent-first.
+    """
+    _LOGGER.info(
+        "Getting monthly stats for user [%s] for [%d] months",
+        user_id,
+        months,
+    )
 
     since = standard_types.Timestamp.now()
     since.value -= months * 31 * 86400
 
     repo = uow.get_repo(entity_type=entities.Movement)
 
-    filters: dict = {"user_id": user_id, "created_at.value": {"$gte": since.value}}
+    filters: dict = {
+        "user_id": user_id,
+        "created_at.value": {"$gte": since.value},
+    }
     if account_id:
         filters["account_id"] = account_id
 
@@ -100,10 +137,17 @@ def monthly(
 
     groups: dict[tuple[int, int], dict] = {}
     for m in movements:
-        dt = datetime.datetime.fromtimestamp(m.created_at.value, tz=datetime.timezone.utc)
+        dt = datetime.datetime.fromtimestamp(
+            m.created_at.value,
+            tz=datetime.timezone.utc,
+        )
         key = (dt.year, dt.month)
         if key not in groups:
-            groups[key] = {"income": decimal.Decimal("0"), "expense": decimal.Decimal("0"), "count": 0}
+            groups[key] = {
+                "income": decimal.Decimal("0"),
+                "expense": decimal.Decimal("0"),
+                "count": 0,
+            }
         entry = groups[key]
         amount = decimal.Decimal(str(m.money.amount))
         if m.movement_type == "INCOME":
@@ -131,6 +175,18 @@ def weekly(
     from_date: str | None = None,
     to_date: str | None = None,
 ) -> dtos.WeeklyStatResponse:
+    """Compute weekly stats with daily breakdown and per-category totals.
+
+    Args:
+        uow: Unit of work for data access.
+        user_id: The user to compute stats for.
+        account_id: Optional account filter.
+        from_date: Optional start date (defaults to start of current week).
+        to_date: Optional end date (defaults to now).
+
+    Returns:
+        A weekly stats response with daily balances and category breakdown.
+    """
     _LOGGER.info("Getting weekly stats for user [%s]", user_id)
 
     now_ts = standard_types.Timestamp.now()
@@ -139,7 +195,10 @@ def weekly(
     to_ts = _ts_from_str(to_date)
 
     if not from_ts:
-        today = datetime.datetime.fromtimestamp(now_ts.value, tz=datetime.timezone.utc)
+        today = datetime.datetime.fromtimestamp(
+            now_ts.value,
+            tz=datetime.timezone.utc,
+        )
         week_start = today - datetime.timedelta(days=today.weekday())
         from_ts = standard_types.Timestamp(value=week_start.timestamp())
     if not to_ts:
@@ -165,18 +224,28 @@ def weekly(
 
         cat_key = (m.category, m.movement_type)
         if cat_key not in by_category:
-            by_category[cat_key] = {"total": decimal.Decimal("0"), "count": 0}
+            by_category[cat_key] = {
+                "total": decimal.Decimal("0"),
+                "count": 0,
+            }
         by_category[cat_key]["total"] += amount
         by_category[cat_key]["count"] += 1
 
         if m.movement_type not in totals:
-            totals[m.movement_type] = {"total": decimal.Decimal("0"), "count": 0}
+            totals[m.movement_type] = {
+                "total": decimal.Decimal("0"),
+                "count": 0,
+            }
         totals[m.movement_type]["total"] += amount
         totals[m.movement_type]["count"] += 1
 
-        day = m.created_at.format("%Y-%m-%d")
+        day = m.created_at.format_timestamp("%Y-%m-%d")
         if day not in by_day:
-            by_day[day] = {"income": decimal.Decimal("0"), "expense": decimal.Decimal("0"), "count": 0}
+            by_day[day] = {
+                "income": decimal.Decimal("0"),
+                "expense": decimal.Decimal("0"),
+                "count": 0,
+            }
         day_entry = by_day[day]
         if m.movement_type == "INCOME":
             day_entry["income"] += amount
@@ -184,8 +253,12 @@ def weekly(
             day_entry["expense"] += amount
         day_entry["count"] += 1
 
-    total_income = str(totals.get("INCOME", {}).get("total", decimal.Decimal("0")))
-    total_expense = str(totals.get("EXPENSE", {}).get("total", decimal.Decimal("0")))
+    total_income = str(
+        totals.get("INCOME", {}).get("total", decimal.Decimal("0"))
+    )
+    total_expense = str(
+        totals.get("EXPENSE", {}).get("total", decimal.Decimal("0"))
+    )
     movement_count = sum(t.get("count", 0) for t in totals.values())
 
     return dtos.WeeklyStatResponse(
@@ -220,9 +293,25 @@ def summary(
     from_date: str | None = None,
     to_date: str | None = None,
 ) -> dtos.SummaryResponse:
+    """Compute a summary with current balance, totals, and movement count.
+
+    Args:
+        uow: Unit of work for data access.
+        user_id: The user to summarize.
+        account_id: Optional account filter.
+        from_date: Optional start date (ISO-8601).
+        to_date: Optional end date (ISO-8601).
+
+    Returns:
+        A summary response with aggregate figures.
+    """
     _LOGGER.info("Getting summary for user [%s]", user_id)
 
-    balance = _get_account_balance(uow=uow, user_id=user_id, account_id=account_id)
+    balance = _get_account_balance(
+        uow=uow,
+        user_id=user_id,
+        account_id=account_id,
+    )
 
     repo = uow.get_repo(entity_type=entities.Movement)
 

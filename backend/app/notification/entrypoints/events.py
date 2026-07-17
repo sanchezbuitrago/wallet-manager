@@ -7,8 +7,9 @@ from app.notification.domain.services import notification_service
 
 @eb.event_handler(domain_events.WhatsAppMessageRequested)
 async def on_whatsapp_message_requested(
-    event: domain_events.WhatsAppMessageRequested
+    event: domain_events.WhatsAppMessageRequested,
 ) -> None:
+    """Convert a WhatsAppMessageRequested event into a send command."""
     uow = mongo_uow.MongoUOW()
     cmd = commands.SendWhatsAppMessageCommand(
         remote_jid=event.remote_jid,

@@ -21,6 +21,8 @@ _LOG_LEVEL_MAP = {
 
 
 class ColorFormatter(logging.Formatter):
+    """Formatter that adds ANSI color codes based on log level."""
+
     COLORS = {
         logging.DEBUG: "\033[94m",    # Blue
         logging.INFO: "\033[92m",     # Green
@@ -30,7 +32,8 @@ class ColorFormatter(logging.Formatter):
     }
     RESET = "\033[0m"
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
+        """Format the log record with ANSI color codes."""
         color = self.COLORS.get(record.levelno, self.RESET)
         log_fmt = (
             f"{color}%(asctime)s [%(levelname)s] "
@@ -40,16 +43,28 @@ class ColorFormatter(logging.Formatter):
         return formatter.format(record)
 
 
-_logger_instance: logging.Logger | None = None  # Singleton instance
+# Module-level singleton to avoid duplicate handlers.
+_logger_instance: logging.Logger | None = None
 
 
 def get_logger(level: int = _LOG_LEVEL_MAP.get(_SETTINGS.log_level, logging.INFO)) -> logging.Logger:
+    """Return a singleton logger configured for the calling module.
+
+    Uses the caller's frame to derive the module name, so each module
+    gets its own logger instance.
+
+    Args:
+        level: Logging level (defaults to the configured log level).
+
+    Returns:
+        A configured Logger instance.
+    """
     global _logger_instance
 
     if _logger_instance is not None:
         return _logger_instance
 
-    # Infer the caller's module name from the stack
+    # Use caller's frame so each module gets its own logger.
     frame = inspect.stack()[1]
     module = inspect.getmodule(frame[0])
     module_name = module.__name__ if module else "default"

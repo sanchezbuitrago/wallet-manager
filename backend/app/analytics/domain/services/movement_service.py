@@ -1,6 +1,8 @@
-from app.commons import logs, standard_types
+from app.commons import logs
+from app.commons import standard_types
 from app.commons.adapters import unit_of_work
-from app.analytics.domain.model import dtos, entities
+from app.analytics.domain.model import dtos
+from app.analytics.domain.model import entities
 
 _LOGGER = logs.get_logger()
 
@@ -16,6 +18,22 @@ def list_movements(
     from_date: str | None = None,
     to_date: str | None = None,
 ) -> dtos.MovementPageResponse:
+    """List movements for a user with optional filters and cursor pagination.
+
+    Args:
+        uow: Unit of work for data access.
+        user_id: The user whose movements to list.
+        account_id: Optional account filter.
+        cursor: Optional cursor for pagination.
+        limit: Maximum number of results (capped at 100).
+        category: Optional category filter.
+        movement_type: Optional type filter (INCOME/EXPENSE).
+        from_date: Optional start date (ISO-8601).
+        to_date: Optional end date (ISO-8601).
+
+    Returns:
+        A paginated movement response.
+    """
     _LOGGER.info("Listing movements for user [%s]", user_id)
 
     repo = uow.get_repo(entity_type=entities.Movement)
@@ -31,10 +49,12 @@ def list_movements(
         filters["movement_type"] = movement_type
     if from_date:
         filters["created_at.value"] = filters.get("created_at.value", {})
-        filters["created_at.value"]["$gte"] = standard_types.Timestamp.from_string(from_date).value
+        from_ts = standard_types.Timestamp.from_string(from_date)
+        filters["created_at.value"]["$gte"] = from_ts.value
     if to_date:
         filters["created_at.value"] = filters.get("created_at.value", {})
-        filters["created_at.value"]["$lte"] = standard_types.Timestamp.from_string(to_date).value
+        to_ts = standard_types.Timestamp.from_string(to_date)
+        filters["created_at.value"]["$lte"] = to_ts.value
 
     movements = list(repo.find_by(
         find=filters,
@@ -69,11 +89,25 @@ def get_movement(
     user_id: str,
     movement_id: str,
 ) -> dtos.MovementResponse | None:
+    """Get a single movement by ID, ensuring it belongs to the user.
+
+    Args:
+        uow: Unit of work for data access.
+        user_id: The owning user's ID.
+        movement_id: The movement ID to look up.
+
+    Returns:
+        The movement response, or None if not found or not owned.
+    """
     _LOGGER.info("Getting movement [%s] for user [%s]", movement_id, user_id)
     repo = uow.get_repo(entity_type=entities.Movement)
     movement = repo.find_by_id(entity_id=entities.MovementId(id=movement_id))
     if not movement or movement.user_id != user_id:
-        _LOGGER.info("Movement [%s] not found or not owned by user [%s]", movement_id, user_id)
+        _LOGGER.info(
+            "Movement [%s] not found or not owned by user [%s]",
+            movement_id,
+            user_id,
+        )
         return None
     return dtos.MovementResponse(
         id=movement.id.value,

@@ -1,13 +1,23 @@
 from app.commons import logs
 from app.commons import domain_events
-from app.commons.base_types import Money
+from app.commons.adapters import unit_of_work
+from app.commons import base_types
 from app.account.domain.model import aggregates
 from app.account.domain.model import commands
 
 _LOGGER = logs.get_logger()
 
 
-async def process(cmd: commands.ProcessMovementCommand, uow) -> None:
+async def process(cmd: commands.ProcessMovementCommand, uow: unit_of_work.AbstractUnitOfWork) -> None:
+    """Apply a movement to the user's account.
+
+    Debits or credits the account, persists the movement, and emits
+    a MovementApplied or MovementApplicationFailed event.
+
+    Args:
+        cmd: The movement command to process.
+        uow: Unit of work for data access.
+    """
     try:
         account_repo = uow.get_repo(aggregates.Account)
         movement_repo = uow.get_repo(aggregates.Movement)
@@ -19,17 +29,17 @@ async def process(cmd: commands.ProcessMovementCommand, uow) -> None:
         if not account:
             account = aggregates.Account.create(user_id=cmd.user_id)
 
-        opening_balance = Money(amount=account.balance.amount)
+        opening_balance = base_types.Money(amount=account.balance.amount)
         if cmd.movement_type == "INCOME":
             account.credit(amount=cmd.amount)
         else:
             account.debit(amount=cmd.amount)
-        closing_balance = Money(amount=account.balance.amount)
+        closing_balance = base_types.Money(amount=account.balance.amount)
 
         movement = aggregates.Movement.create(
             account_id=account.id.value,
             user_id=cmd.user_id,
-            money=Money(amount=cmd.amount),
+            money=base_types.Money(amount=cmd.amount),
             opening_balance=opening_balance,
             closing_balance=closing_balance,
             category=cmd.category,

@@ -1,7 +1,9 @@
 import datetime
 import jwt
 
-from app.auth.domain.model import exceptions, dtos, commands
+from app.auth.domain.model import exceptions
+from app.auth.domain.model import dtos
+from app.auth.domain.model import commands
 from app.auth.domain.model import aggregates
 from app.commons.adapters import unit_of_work
 from app.commons import logs
@@ -12,11 +14,18 @@ _DEFAULT_ACCESS_TOKEN_TIMEDELTA_IN_HOURS = 1
 _DEFAULT_REFRESH_TOKEN_TIMEDELTA_IN_HOURS = 24
 
 
-def _create_access_token(user_id: str, tokens_secret_key: str, algorithm:str) -> str:
+def _create_access_token(
+    user_id: str,
+    tokens_secret_key: str,
+    algorithm: str,
+) -> str:
     return jwt.encode(
         payload=dtos.TokenInfo(
             user_id=user_id,
-            exp=datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(hours=_DEFAULT_ACCESS_TOKEN_TIMEDELTA_IN_HOURS),
+            exp=(
+                datetime.datetime.now(tz=datetime.UTC)
+                + datetime.timedelta(hours=_DEFAULT_ACCESS_TOKEN_TIMEDELTA_IN_HOURS)
+            ),
             token_type=dtos.TokenType.ACCESS_TOKEN,
         ).model_dump(),
         key=tokens_secret_key,
@@ -24,11 +33,18 @@ def _create_access_token(user_id: str, tokens_secret_key: str, algorithm:str) ->
     )
 
 
-def _create_refresh_toke(user_id: str, tokens_secret_key: str, algorithm:str) -> str:
+def _create_refresh_token(
+    user_id: str,
+    tokens_secret_key: str,
+    algorithm: str,
+) -> str:
     return jwt.encode(
         payload=dtos.TokenInfo(
             user_id=user_id,
-            exp=datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(hours=_DEFAULT_REFRESH_TOKEN_TIMEDELTA_IN_HOURS),
+            exp=(
+                datetime.datetime.now(tz=datetime.UTC)
+                + datetime.timedelta(hours=_DEFAULT_REFRESH_TOKEN_TIMEDELTA_IN_HOURS)
+            ),
             token_type=dtos.TokenType.REFRESH_TOKEN,
         ).model_dump(),
         key=tokens_secret_key,
@@ -55,6 +71,21 @@ def do_login(
         auth_secret_key: str,
         algorithm: str
 ) -> dtos.LoginResponse:
+    """Authenticate a user by email and PIN.
+
+    Args:
+        uow: Unit of work for data access.
+        cmd: Login request containing email and PIN.
+        auth_secret_key: Secret key for JWT signing.
+        algorithm: JWT signing algorithm.
+
+    Returns:
+        A LoginResponse with access and refresh tokens.
+
+    Raises:
+        EmailNotFoundError: If the email is not registered.
+        PinNotMatchError: If the PIN does not match.
+    """
     _LOGGER.info("Try to do login with email [%s]", cmd.email)
     repo = uow.get_repo(entity_type=aggregates.User)
 
@@ -65,11 +96,19 @@ def do_login(
 
     if user.pin != cmd.pin:
         _LOGGER.info("Pin not match to do login with email [%s]", cmd.email)
-        raise exceptions.PINNotMatchError()
+        raise exceptions.PinNotMatchError()
 
     _LOGGER.info("Login process successfully for email [%s]", cmd.email)
 
     return dtos.LoginResponse(
-        access_token=_create_access_token(user_id=user.id.value, tokens_secret_key=auth_secret_key, algorithm=algorithm),
-        refresh_token=_create_refresh_toke(user_id=user.id.value, tokens_secret_key=auth_secret_key, algorithm=algorithm)
+        access_token=_create_access_token(
+            user_id=user.id.value,
+            tokens_secret_key=auth_secret_key,
+            algorithm=algorithm,
+        ),
+        refresh_token=_create_refresh_token(
+            user_id=user.id.value,
+            tokens_secret_key=auth_secret_key,
+            algorithm=algorithm,
+        )
     )

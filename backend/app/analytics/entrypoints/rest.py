@@ -1,9 +1,14 @@
 import fastapi
 
-from app.commons import context, logs
+from app.commons import context
+from app.commons import logs
 from app.commons.adapters import mongo_uow
-from app.commons import formatters, standard_types, wrappers
-from app.analytics.domain.services import account_service, movement_service, stats_service
+from app.commons import formatters
+from app.commons import standard_types
+from app.commons import wrappers
+from app.analytics.domain.services import account_service
+from app.analytics.domain.services import movement_service
+from app.analytics.domain.services import stats_service
 
 _LOGGER = logs.get_logger()
 
@@ -12,10 +17,16 @@ analytics_routes = fastapi.APIRouter()
 
 @analytics_routes.get("/accounts")
 @wrappers.authentication_required
-async def list_accounts(authorization: str = fastapi.Header(None)) -> fastapi.Response:
+async def list_accounts(
+    authorization: str = fastapi.Header(None),
+) -> fastapi.Response:
+    """List all accounts for the authenticated user."""
     user_id = context.UserContext.get()
     _LOGGER.info("Listing accounts for user [%s]", user_id)
-    accounts = account_service.list_accounts_by_user(uow=mongo_uow.MongoUOW(), user_id=user_id)
+    accounts = account_service.list_accounts_by_user(
+        uow=mongo_uow.MongoUOW(),
+        user_id=user_id,
+    )
     return formatters.format_http_response(
         success=True,
         body={"items": [a.model_dump() for a in accounts]},
@@ -35,6 +46,7 @@ async def list_movements(
     to_date: str | None = None,
     authorization: str = fastapi.Header(None),
 ) -> fastapi.Response:
+    """List movements with optional filters and cursor pagination."""
     user_id = context.UserContext.get()
     page = movement_service.list_movements(
         uow=mongo_uow.MongoUOW(),
@@ -60,6 +72,7 @@ async def get_movement(
     movement_id: str,
     authorization: str = fastapi.Header(None),
 ) -> fastapi.Response:
+    """Get a single movement by ID."""
     user_id = context.UserContext.get()
     movement = movement_service.get_movement(
         uow=mongo_uow.MongoUOW(),
@@ -94,6 +107,7 @@ async def stats_by_category(
     to_date: str | None = None,
     authorization: str = fastapi.Header(None),
 ) -> fastapi.Response:
+    """Get movement totals grouped by category."""
     user_id = context.UserContext.get()
     stats = stats_service.by_category(
         uow=mongo_uow.MongoUOW(),
@@ -117,6 +131,7 @@ async def stats_monthly(
     months: int = 6,
     authorization: str = fastapi.Header(None),
 ) -> fastapi.Response:
+    """Get monthly income and expense totals."""
     user_id = context.UserContext.get()
     stats = stats_service.monthly(
         uow=mongo_uow.MongoUOW(),
@@ -139,6 +154,7 @@ async def stats_weekly(
     to_date: str | None = None,
     authorization: str = fastapi.Header(None),
 ) -> fastapi.Response:
+    """Get weekly stats with daily breakdown."""
     user_id = context.UserContext.get()
     stats = stats_service.weekly(
         uow=mongo_uow.MongoUOW(),
@@ -162,6 +178,7 @@ async def stats_summary(
     to_date: str | None = None,
     authorization: str = fastapi.Header(None),
 ) -> fastapi.Response:
+    """Get an aggregate summary of balance and movement totals."""
     user_id = context.UserContext.get()
     stats = stats_service.summary(
         uow=mongo_uow.MongoUOW(),

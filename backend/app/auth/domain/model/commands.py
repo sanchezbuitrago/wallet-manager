@@ -1,4 +1,5 @@
-from app.commons import base_types, standard_types
+from app.commons import base_types
+from app.commons import standard_types
 
 
 class CreateUserRequest(base_types.ValueObject):
@@ -14,6 +15,6 @@ class DoLoginRequest(base_types.ValueObject):
     pin: str
 
 
-class ChangePINRequest(base_types.ValueObject):
+class ChangePinRequest(base_types.ValueObject):
     old_pin: str
     new_pin: str

@@ -20,5 +20,5 @@ class UserAlreadyExistError(Exception):
 class EmailNotFoundError(Exception):
     ...
 
-class PINNotMatchError(Exception):
+class PinNotMatchError(Exception):
     ...

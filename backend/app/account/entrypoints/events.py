@@ -3,7 +3,10 @@ from app.commons import event_bus as eb
 
 
 @eb.event_handler(domain_events.ApplyMovementRequested)
-async def on_apply_movement_requested(event) -> None:
+async def on_apply_movement_requested(
+    event: domain_events.ApplyMovementRequested,
+) -> None:
+    """Convert an ApplyMovementRequested event into a movement command."""
     from app.commons.adapters import mongo_uow
     from app.account.domain.model import commands
     from app.account.domain.services import movement_service
