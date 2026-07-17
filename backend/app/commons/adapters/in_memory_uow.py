@@ -1,78 +1,94 @@
-from typing import Any, Iterator
-
-from app.commons import base_types, logs, unit_of_work
-
-_LOGGER = logs.get_logger()
-
-
-class InMemoryUOW(unit_of_work.AbstractUnitOfWork):
-    def __init__(self) -> None:
-        self._db: dict[str, dict[str, dict]] = {}
-
-    def get_repo(
-        self, entity_type: type[unit_of_work.T]
-    ) -> unit_of_work.AbstractRepository[unit_of_work.T]:
-        return InMemoryRepository(entity_type=entity_type, db_session=self._db)
+from app.commons import base_types
+from app.commons.adapters import unit_of_work
 
 
 class InMemoryRepository(unit_of_work.AbstractRepository):
-    def __init__(
-        self,
-        entity_type: type[unit_of_work.T],
-        db_session: dict[str, dict[str, dict]],
-    ) -> None:
-        self._entity_type: type[unit_of_work.T] = entity_type
-        self.db_session = db_session
+    def __init__(self, entity_type: type, store: dict, uow=None):
+        self._entity_type = entity_type
+        self._store = store
+        self._uow = uow
 
-    def get_model_type(self) -> type[unit_of_work.T]:
-        return self._entity_type
+    def save(self, item) -> None:
+        self._assert_not_readonly(item)
+        key = item.id.key()
+        existing = self._store.get(key)
 
-    def query(self) -> Iterator[unit_of_work.T]:
-        raise NotImplementedError()
-
-    def save(self, new_item: unit_of_work.T) -> None:
-        self._assert_not_readonly(item=new_item)
-        store = self.db_session.get(self._entity_type.__name__)
-        if store:
-            existing = store.get(new_item.id.key())
-            if existing:
-                expected_version = existing.get("version", 1)
-                if new_item.version != expected_version:
-                    raise base_types.OptimisticLockError(
-                        f"Entity [{new_item.id.key()}] version conflict: "
-                        f"expected {expected_version}, got {new_item.version}"
-                    )
-                new_item.version = expected_version + 1
-            store.update({new_item.id.key(): new_item.dict()})
+        if existing:
+            expected_version = item.version
+            if existing.version != expected_version:
+                raise base_types.OptimisticLockError(
+                    f"Entity [{key}] was modified by another process"
+                )
+            item.version = expected_version + 1
+            self._store[key] = item
         else:
-            self.db_session.update(
-                {self._entity_type.__name__: {new_item.id.key(): new_item.dict()}}
+            self._store[key] = item
+
+    def find_by_id(self, entity_id):
+        return self._store.get(entity_id.key())
+
+    def find_by(self, find: dict, sort_by: str = "created_at", descending: bool = True):
+        results = list(self._store.values())
+        for field, value in find.items():
+            results = [r for r in results if getattr(r, field, None) == value]
+
+        def sort_key(item):
+            val = getattr(item, sort_by, None)
+            if val is None:
+                return ""
+            if hasattr(val, "value"):
+                return val.value
+            return str(val)
+
+        results.sort(key=sort_key, reverse=descending)
+        return iter(results)
+
+    def get_all(self, descending: bool = True, limit: int = 20, sort_by: str = "created_at"):
+        results = list(self._store.values())
+
+        def sort_key(item):
+            val = getattr(item, sort_by, None)
+            if val is None:
+                return ""
+            if hasattr(val, "value"):
+                return val.value
+            return str(val)
+
+        results.sort(key=sort_key, reverse=descending)
+        return iter(results[:limit])
+
+    def _assert_not_readonly(self, item) -> None:
+        if isinstance(item, base_types.ForeignAggregate):
+            raise TypeError(
+                f"Cannot save read-only entity [{item.id.key()}]"
             )
 
-    def find_by_id(
-        self, entity_id: unit_of_work.U, entity_type: type[unit_of_work.T]
-    ) -> unit_of_work.T | None:
-        _LOGGER.info("GETTING BY ID")
-        fields = self.db_session.get(self._entity_type.__name__, {})
-        item = fields.get(entity_id.key(), None)
-        return self._entity_type.parse_obj(item) if item else None  # type: ignore
 
-    def get_all(self, descending: bool = True, limit: int = 20, find: dict[str, Any] | None = None, sort_by: str = "created_at") -> Iterator[
-        unit_of_work.T]:
-        _LOGGER.info("GETTING ALL DATA")
-        for key_item, value_item in self.db_session.get(
-            self._entity_type.__name__, {}
-        ).items():
-            yield self._entity_type.parse_obj(value_item)
+class InMemoryUOW(unit_of_work.AbstractUnitOfWork):
+    def __init__(self):
+        super().__init__()
+        self._stores: dict[type, dict] = {}
 
-    def find_by(self, sort_by: str, **kwargs: str) -> Iterator[unit_of_work.T]:
-        _LOGGER.info(f"Getting data filtering by {kwargs}")
-        for key_item, value_item in self.db_session.get(
-            self._entity_type.__name__, {}
-        ).items():
-            item_mach = all(
-                value_item.get(item_property) == kwargs[item_property]
-                for item_property in kwargs.keys()
-            )
-            if item_mach:
-                yield self._entity_type.parse_obj(value_item)
+    def _get_store(self, entity_type: type) -> dict:
+        if entity_type not in self._stores:
+            self._stores[entity_type] = {}
+        return self._stores[entity_type]
+
+    def _create_repo(self, entity_type: type):
+        return InMemoryRepository(
+            entity_type=entity_type,
+            store=self._get_store(entity_type),
+            uow=self
+        )
+
+    async def _start_transaction(self) -> None:
+        self._snapshot = {
+            et: dict(store) for et, store in self._stores.items()
+        }
+
+    async def _commit_transaction(self) -> None:
+        self._snapshot = None
+
+    async def _abort_transaction(self) -> None:
+        self._stores = self._snapshot
+        self._snapshot = None

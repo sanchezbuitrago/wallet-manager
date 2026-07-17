@@ -1,22 +1,63 @@
+import asyncio
+from contextlib import asynccontextmanager
+
 import fastapi
-import http
-from app.auth.entrypoints import web as auth_entrypoints
-from app.webhooks.entrypoints import webhooks as webhooks_entrypoints
-from app.analytics.entrypoints import rest as analytics_entrypoints
+
+from app.commons.adapters import outbox_worker
 from app.commons.cors import setup_cors
+from app.webhooks.entrypoints import webhooks as webhooks_entrypoints
+from app.auth.entrypoints.web import auth_routes, users_routes
+from app.analytics.entrypoints.rest import analytics_routes
 
-app = fastapi.FastAPI()
+# Import event handlers to register them with the event bus
+import app.webhooks.entrypoints.events  # noqa: E402
+import app.account.entrypoints.events  # noqa: E402
+import app.notification.entrypoints.events  # noqa: E402
 
-setup_cors(app)
-
-app.include_router(router=webhooks_entrypoints.webhooks_routes, prefix="/webhooks", tags=["Webhooks"])
-app.include_router(router=auth_entrypoints.users_routes, prefix="/users", tags=["Users"])
-app.include_router(router=auth_entrypoints.auth_routes, prefix="/auth", tags=["Auth"])
-app.include_router(router=analytics_entrypoints.analytics_routes, prefix="/analytics", tags=["Analytics"])
+worker = outbox_worker.OutboxWorker(interval=5.0)
 
 
-@app.exception_handler(fastapi.exceptions.RequestValidationError)
-async def validation_exception_handler(request: fastapi.Request, exc: fastapi.exceptions.RequestValidationError):
+@asynccontextmanager
+async def lifespan(fastapi_app: fastapi.FastAPI):
+    asyncio.create_task(worker.start())
+    yield
+    worker.stop()
+
+
+application = fastapi.FastAPI(lifespan=lifespan)
+setup_cors(application)
+
+application.include_router(
+    router=webhooks_entrypoints.webhooks_routes,
+    prefix="/webhooks",
+    tags=["Webhooks"]
+)
+
+application.include_router(
+    router=auth_routes,
+    prefix="/auth",
+    tags=["Auth"]
+)
+
+application.include_router(
+    router=users_routes,
+    prefix="/users",
+    tags=["Users"]
+)
+
+application.include_router(
+    router=analytics_routes,
+    prefix="/analytics",
+    tags=["Analytics"]
+)
+
+
+@application.exception_handler(fastapi.exceptions.RequestValidationError)
+async def validation_exception_handler(
+    request: fastapi.Request,
+    exc: fastapi.exceptions.RequestValidationError
+):
+    import http
     errors = exc.errors()
     return fastapi.responses.JSONResponse(
         status_code=http.HTTPStatus.OK,
