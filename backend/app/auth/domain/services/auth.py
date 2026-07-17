@@ -65,6 +65,48 @@ def _validate_token(access_token: str, token_type: dtos.TokenType) -> None:
         raise exceptions.TokenTypeNotValidError()
 
 
+def do_refresh(
+        refresh_token: str,
+        auth_secret_key: str,
+        algorithm: str,
+) -> dtos.LoginResponse:
+    """Issue a new access token using a valid refresh token.
+
+    Args:
+        refresh_token: The refresh token JWT string.
+        auth_secret_key: Secret key for JWT signing.
+        algorithm: JWT signing algorithm.
+
+    Returns:
+        A LoginResponse with a new access token and the same refresh token.
+
+    Raises:
+        AccessTokenNotValidError: If the token cannot be decoded.
+        RefreshTokenExpiredError: If the refresh token has expired.
+        TokenTypeNotValidError: If the token is not a refresh token.
+    """
+    _LOGGER.info("Trying to refresh access token")
+    _validate_token(refresh_token, dtos.TokenType.REFRESH_TOKEN)
+
+    token_data = jwt.decode(
+        refresh_token,
+        key=auth_secret_key,
+        algorithms=algorithm,
+    )
+    user_id = token_data["user_id"]
+
+    _LOGGER.info("Refresh token valid for user [%s]", user_id)
+
+    return dtos.LoginResponse(
+        access_token=_create_access_token(
+            user_id=user_id,
+            tokens_secret_key=auth_secret_key,
+            algorithm=algorithm,
+        ),
+        refresh_token=refresh_token,
+    )
+
+
 def do_login(
         uow: unit_of_work.AbstractUnitOfWork,
         cmd: commands.DoLoginRequest,

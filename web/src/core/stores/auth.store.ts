@@ -32,13 +32,41 @@ export const authStore = {
       throw new Error(res.errors[0]?.detail || "Login failed");
     }
     localStorage.setItem("token", res.body.access_token);
+    localStorage.setItem("refresh_token", res.body.refresh_token);
     tokenStore.set(res.body.access_token);
   },
 
   logout: () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("refresh_token");
     tokenStore.set(null);
   },
 
   getToken: () => tokenStore.get(),
+
+  getRefreshToken: (): string | null => {
+    return localStorage.getItem("refresh_token");
+  },
+
+  async refreshToken(): Promise<string> {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) {
+      throw new Error("No refresh token available");
+    }
+
+    const res = await api.post<LoginResponse>("/auth/refresh", {
+      refresh_token: refreshToken,
+    });
+
+    if (!res.success) {
+      throw new Error(res.errors[0]?.detail || "Token refresh failed");
+    }
+
+    localStorage.setItem("token", res.body.access_token);
+    // The backend returns the same refresh_token on refresh
+    localStorage.setItem("refresh_token", res.body.refresh_token);
+    tokenStore.set(res.body.access_token);
+
+    return res.body.access_token;
+  },
 };

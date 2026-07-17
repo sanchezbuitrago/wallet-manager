@@ -14,11 +14,18 @@ from app.commons import formatters
 
 from app.auth.domain.services import users
 from app.auth.domain.services import auth
+import pydantic
 
 _LOGGER = logs.get_logger()
 
 auth_routes = fastapi.APIRouter()
 users_routes = fastapi.APIRouter()
+
+
+class RefreshTokenRequest(pydantic.BaseModel):
+    """Request body for the token refresh endpoint."""
+
+    refresh_token: str
 
 
 class _Settings(pydantic_settings.BaseSettings):
@@ -84,6 +91,41 @@ async def do_login(
                     title="Bad email or password",
                     code="BAD_EMAIL_OR_PASSWORD_ERROR",
                     detail=f"The email or pin are incorrect"
+                )
+            ]
+        )
+
+
+@auth_routes.post("/refresh")
+async def refresh_token(
+    body: RefreshTokenRequest,
+) -> fastapi.Response:
+    """Issue a new access token using a valid refresh token."""
+    try:
+        login_response = auth.do_refresh(
+            refresh_token=body.refresh_token,
+            auth_secret_key=_SETTINGS.auth_secret_key,
+            algorithm=_SETTINGS.algorithm,
+        )
+        return formatters.format_http_response(
+            success=True,
+            body=login_response.model_dump(),
+            errors=[]
+        )
+    except (
+        exceptions.AccessTokenNotValidError,
+        exceptions.RefreshTokenExpiredError,
+        exceptions.TokenTypeNotValidError,
+    ):
+        return formatters.format_http_response(
+            status_code=http.HTTPStatus.UNAUTHORIZED,
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Invalid refresh token",
+                    code="AUTH/INVALID_REFRESH_TOKEN",
+                    detail="The refresh token is invalid or has expired"
                 )
             ]
         )
