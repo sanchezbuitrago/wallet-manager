@@ -12,7 +12,7 @@ async function request<T>(
   method: HttpMethod,
   url: string,
   body?: unknown,
-  retryCount = 0
+  retryCount = 0,
 ): Promise<ApiResult<T>> {
   const headers: Record<string, string> = {};
   const token = authStore.getToken();
@@ -27,6 +27,7 @@ async function request<T>(
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    cache: "no-store",
   });
 
   if (res.status === 401 && retryCount === 0) {
@@ -43,6 +44,10 @@ async function request<T>(
   if (res.status === 401 && retryCount > 0) {
     authStore.logout();
     window.location.href = "/login";
+    return { success: false, body: null as T, errors: [] };
+  }
+
+  if (res.status === 304) {
     return { success: false, body: null as T, errors: [] };
   }
 

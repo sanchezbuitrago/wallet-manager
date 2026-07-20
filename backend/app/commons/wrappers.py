@@ -66,6 +66,20 @@ def authentication_required(function: Callable) -> Callable:
                     algorithms=_SETTINGS.algorithm,
                 )
             )
+        except jwt.ExpiredSignatureError:
+            _LOGGER.warning("Token has expired")
+            return formatters.format_http_response(
+                status_code=http.HTTPStatus.UNAUTHORIZED,
+                success=False,
+                body={},
+                errors=[
+                    standard_types.ApiError(
+                        title="User unauthorized",
+                        code="AUTH/EXPIRED_TOKEN",
+                        detail="Token expired"
+                    )
+                ]
+            )
         except jwt.DecodeError as e:
             _LOGGER.warning("Token is invalid, Exception: %s", str(e))
             return formatters.format_http_response(

@@ -1,5 +1,6 @@
 import abc
 import traceback
+import types
 from typing import Any
 
 from app.commons.adapters import outbox
@@ -107,7 +108,7 @@ class _TransactionContext:
         self,
         exc_type: type | None,
         exc_val: BaseException | None,
-        exc_tb: traceback.TracebackType | None,
+        exc_tb: types.TracebackType | None,
     ) -> bool:
         if exc_type is None:
             outbox_repo = self._uow._create_repo(outbox.OutboxEvent)

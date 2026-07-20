@@ -54,19 +54,22 @@ export const authStore = {
       throw new Error("No refresh token available");
     }
 
-    const res = await api.post<LoginResponse>("/auth/refresh", {
-      refresh_token: refreshToken,
+    const res = await fetch("/auth/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
     });
 
-    if (!res.success) {
-      throw new Error(res.errors[0]?.detail || "Token refresh failed");
+    const json = await res.json();
+
+    if (!res.ok || !json.success) {
+      throw new Error(json.errors?.[0]?.detail || "Token refresh failed");
     }
 
-    localStorage.setItem("token", res.body.access_token);
-    // The backend returns the same refresh_token on refresh
-    localStorage.setItem("refresh_token", res.body.refresh_token);
-    tokenStore.set(res.body.access_token);
+    localStorage.setItem("token", json.body.access_token);
+    localStorage.setItem("refresh_token", json.body.refresh_token);
+    tokenStore.set(json.body.access_token);
 
-    return res.body.access_token;
+    return json.body.access_token;
   },
 };
