@@ -220,28 +220,175 @@ async def refresh_token(
         )
 
 
-@users_routes.patch("/pin")
+@users_routes.get("/myself")
+@wrappers.authentication_required
+async def get_myself(
+    authorization: str = fastapi.Header(None),
+) -> fastapi.Response:
+    """Get the authenticated user's profile."""
+    try:
+        user_id = context.UserContext.get()
+        user = users.get_myself(
+            user_id=user_id,
+            uow=mongo_uow.MongoUOW(),
+        )
+        return formatters.format_http_response(
+            success=True,
+            body={
+                "id": user.id.value,
+                "first_names": user.first_names,
+                "last_names": user.last_names,
+                "email": user.email,
+                "phone_number": user.phone_number.model_dump(),
+                "full_phone": user.full_phone,
+                "status": user.status.value,
+            },
+            errors=[]
+        )
+    except exceptions.EmailNotFoundError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="User Not Found",
+                    code="USER_NOT_FOUND",
+                    detail="User not found"
+                )
+            ]
+        )
+
+
+@users_routes.patch("/myself/profile")
+@wrappers.authentication_required
+async def request_profile_update(
+    body: commands.UpdateProfileRequest,
+    authorization: str = fastapi.Header(None),
+) -> fastapi.Response:
+    """Stage profile changes and send a verification code."""
+    try:
+        user_id = context.UserContext.get()
+        requires_verification = users.request_profile_update(
+            cmd=body,
+            user_id=user_id,
+            uow=mongo_uow.MongoUOW(),
+        )
+        return formatters.format_http_response(
+            success=True,
+            body={"requires_verification": requires_verification},
+            errors=[]
+        )
+    except exceptions.UserAlreadyExistError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Email Already In Use",
+                    code="USER_ALREADY_EXIST",
+                    detail="The email is already registered by another user"
+                )
+            ]
+        )
+    except exceptions.PhoneNumberAlreadyExistError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Phone Number Already In Use",
+                    code="PHONE_NUMBER_ALREADY_EXIST",
+                    detail="The phone number is already registered by another user"
+                )
+            ]
+        )
+
+
+@users_routes.post("/myself/verify")
+@wrappers.authentication_required
+async def verify_profile_update(
+    body: commands.VerifyTokenRequest,
+    authorization: str = fastapi.Header(None),
+) -> fastapi.Response:
+    """Verify the code and apply staged profile changes."""
+    try:
+        user_id = context.UserContext.get()
+        users.verify_profile_update(
+            cmd=body,
+            user_id=user_id,
+            uow=mongo_uow.MongoUOW(),
+        )
+        return formatters.format_http_response(
+            success=True,
+            body={},
+            errors=[]
+        )
+    except exceptions.InvalidVerificationCodeError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Invalid Code",
+                    code="INVALID_VERIFICATION_CODE",
+                    detail="The verification code is incorrect"
+                )
+            ]
+        )
+    except exceptions.VerificationCodeExpiredError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Code Expired",
+                    code="VERIFICATION_CODE_EXPIRED",
+                    detail="The verification code has expired. Please request a new one."
+                )
+            ]
+        )
+
+
+@users_routes.patch("/myself/pin")
 @wrappers.authentication_required
 async def change_pin(
     change_pin_request: commands.ChangePinRequest,
     authorization: str = fastapi.Header(None),
 ) -> fastapi.Response:
-    """Change the authenticated user's PIN."""
+    """Validate current PIN, stage new PIN, and send a verification code."""
     try:
-        _LOGGER.info("User context: %s", context.UserContext.get())
+        user_id = context.UserContext.get()
         users.change_pin(
+            cmd=change_pin_request,
+            user_id=user_id,
             uow=mongo_uow.MongoUOW(),
-            cmd=change_pin_request
         )
         return formatters.format_http_response(
             success=True,
             body={},
             errors=[]
         )
-    except Exception as e:
+    except exceptions.EmailNotFoundError:
         return formatters.format_http_response(
-            status_code=http.HTTPStatus.BAD_GATEWAY,
-            success=True,
+            success=False,
             body={},
-            errors=[]
+            errors=[
+                standard_types.ApiError(
+                    title="User Not Found",
+                    code="USER_NOT_FOUND",
+                    detail="User not found"
+                )
+            ]
+        )
+    except exceptions.PinNotMatchError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Invalid PIN",
+                    code="PIN_NOT_MATCH",
+                    detail="The current PIN is incorrect"
+                )
+            ]
         )

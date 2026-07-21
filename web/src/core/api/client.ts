@@ -22,6 +22,7 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
     "El codigo de verificacion ha expirado. Solicita uno nuevo.",
   "AUTH/INVALID_REFRESH_TOKEN":
     "El token de sesion ha expirado. Inicia sesion de nuevo.",
+  PIN_NOT_MATCH: "El PIN actual es incorrecto",
 };
 
 function translateErrors(

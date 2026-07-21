@@ -172,13 +172,201 @@ def find_user_by_phone(
 
 
 def change_pin(
-    uow: unit_of_work.AbstractUnitOfWork,
-    cmd: commands.ChangePinRequest,
+        cmd: commands.ChangePinRequest,
+        user_id: str,
+        uow: unit_of_work.AbstractUnitOfWork,
 ) -> None:
-    """Change a user's PIN.
+    """Validate the current PIN, stage the new PIN, and send a verification code.
 
     Args:
-        uow: Unit of work for data access.
         cmd: The change-PIN request with old and new PIN values.
+        user_id: The authenticated user's ID.
+        uow: Unit of work for data access.
+
+    Raises:
+        EmailNotFoundError: If user not found.
+        PinNotMatchError: If the current PIN is incorrect.
     """
-    _LOGGER.info("Try to change pin")
+    _LOGGER.info("Try to change pin for user [%s]", user_id)
+    repo = uow.get_repo(entity_type=aggregates.User)
+    user = next(repo.find_by(find={"_id": user_id}), None)
+    if not user:
+        raise exceptions.EmailNotFoundError()
+
+    if user.pin != cmd.old_pin:
+        _LOGGER.info("Current PIN mismatch for user [%s]", user_id)
+        raise exceptions.PinNotMatchError()
+
+    pending = aggregates.PendingProfile(pin=cmd.new_pin)
+    user.pending_profile = pending
+    code = _generate_verification_code()
+    user.assign_verification_code(code)
+    repo.save(new_item=user)
+    uow.add_event(domain_events.TokenRequested(
+        user_id=user.id.value,
+        phone_number=user.full_phone,
+        verification_code=code,
+    ))
+    _LOGGER.info("PIN change staged for user [%s]", user_id)
+
+
+def get_myself(
+        user_id: str,
+        uow: unit_of_work.AbstractUnitOfWork,
+) -> aggregates.User:
+    """Get the authenticated user's profile.
+
+    Args:
+        user_id: The user's ID from the JWT token.
+        uow: Unit of work for data access.
+
+    Returns:
+        The User aggregate.
+
+    Raises:
+        EmailNotFoundError: If no user is found.
+    """
+    _LOGGER.info("Get profile for user [%s]", user_id)
+    repo = uow.get_repo(entity_type=aggregates.User)
+    user = next(repo.find_by(find={"_id": user_id}), None)
+    if not user:
+        raise exceptions.EmailNotFoundError()
+    return user
+
+
+def _check_email_uniqueness(
+        email: str,
+        exclude_user_id: str,
+        repo,
+) -> None:
+    """Validate that the email is not used by another active user.
+
+    Args:
+        email: The email to check.
+        exclude_user_id: User ID to exclude from the check.
+        repo: The user repository.
+
+    Raises:
+        UserAlreadyExistError: If another user already has this email.
+    """
+    existing = next(repo.find_by(find={"email": email}), None)
+    if existing and existing.id.value != exclude_user_id:
+        raise exceptions.UserAlreadyExistError()
+
+
+def request_profile_update(
+        cmd: commands.UpdateProfileRequest,
+        user_id: str,
+        uow: unit_of_work.AbstractUnitOfWork,
+) -> bool:
+    """Apply profile changes, requesting verification only if phone changes.
+
+    If the phone number is not changing, changes are applied immediately.
+    If the phone number changes, changes are staged and a verification code
+    is sent via WhatsApp.
+
+    Args:
+        cmd: The profile update request.
+        user_id: The authenticated user's ID.
+        uow: Unit of work for data access.
+
+    Returns:
+        True if verification is required (phone changed), False otherwise.
+
+    Raises:
+        EmailNotFoundError: If user not found.
+        UserAlreadyExistError: If new email is taken by another user.
+        PhoneNumberAlreadyExistError: If new phone is taken by another user.
+    """
+    _LOGGER.info("Request profile update for user [%s]", user_id)
+    repo = uow.get_repo(entity_type=aggregates.User)
+    user = next(repo.find_by(find={"_id": user_id}), None)
+    if not user:
+        raise exceptions.EmailNotFoundError()
+
+    has_phone_change = (
+        cmd.phone_number is not None
+        and (
+            cmd.phone_number.country_code != user.phone_number.country_code
+            or cmd.phone_number.number != user.phone_number.number
+        )
+    )
+
+    if has_phone_change:
+        full_phone = f"{cmd.phone_number.country_code}{cmd.phone_number.number}"
+        _check_phone_uniqueness(full_phone, user_id, repo)
+
+    if cmd.email is not None:
+        _check_email_uniqueness(cmd.email, user_id, repo)
+
+    if has_phone_change:
+        pending = aggregates.PendingProfile()
+        if cmd.first_names is not None:
+            pending = pending.model_copy(update={"first_names": cmd.first_names})
+        if cmd.last_names is not None:
+            pending = pending.model_copy(update={"last_names": cmd.last_names})
+        if cmd.email is not None:
+            pending = pending.model_copy(update={"email": cmd.email})
+        if cmd.phone_number is not None:
+            pending = pending.model_copy(update={"phone_number": cmd.phone_number})
+        if cmd.pin is not None:
+            pending = pending.model_copy(update={"pin": cmd.pin})
+
+        user.pending_profile = pending
+        code = _generate_verification_code()
+        user.assign_verification_code(code)
+        repo.save(new_item=user)
+        uow.add_event(domain_events.TokenRequested(
+            user_id=user.id.value,
+            phone_number=full_phone,
+            verification_code=code,
+        ))
+        _LOGGER.info("Profile update staged for user [%s]", user_id)
+        return True
+
+    if cmd.first_names is not None:
+        user.first_names = cmd.first_names
+    if cmd.last_names is not None:
+        user.last_names = cmd.last_names
+    if cmd.email is not None:
+        user.email = cmd.email
+    if cmd.pin is not None:
+        user.pin = cmd.pin
+
+    repo.save(new_item=user)
+    _LOGGER.info("Profile updated directly for user [%s]", user_id)
+    return False
+
+
+def verify_profile_update(
+        cmd: commands.VerifyTokenRequest,
+        user_id: str,
+        uow: unit_of_work.AbstractUnitOfWork,
+) -> None:
+    """Verify the code and apply staged profile changes.
+
+    Args:
+        cmd: The verification request with code.
+        user_id: The authenticated user's ID.
+        uow: Unit of work for data access.
+
+    Raises:
+        EmailNotFoundError: If user not found.
+        InvalidVerificationCodeError: If code is incorrect.
+        VerificationCodeExpiredError: If code has expired.
+    """
+    _LOGGER.info("Verify profile update for user [%s]", user_id)
+    repo = uow.get_repo(entity_type=aggregates.User)
+    user = next(repo.find_by(find={"_id": user_id}), None)
+    if not user:
+        raise exceptions.EmailNotFoundError()
+
+    if not user.is_verification_code_valid(cmd.code):
+        if user.verification_code is not None and user.verification_code_expires_at is not None:
+            if time.time() >= user.verification_code_expires_at:
+                raise exceptions.VerificationCodeExpiredError()
+        raise exceptions.InvalidVerificationCodeError()
+
+    user.apply_pending_profile()
+    repo.save(new_item=user)
+    _LOGGER.info("Profile updated for user [%s]", user_id)

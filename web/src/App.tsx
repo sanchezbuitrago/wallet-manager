@@ -7,6 +7,7 @@ import { VerifyPage } from "./ui/pages/VerifyPage";
 import { DashboardPage } from "./ui/pages/DashboardPage";
 import { MovementsPage } from "./ui/pages/MovementsPage";
 import { MovementDetailPage } from "./ui/pages/MovementDetailPage";
+import { SettingsPage } from "./ui/pages/SettingsPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -39,6 +40,12 @@ export function App() {
             <MovementDetailPage id={params.id} />
           </ProtectedRoute>
         )}
+      </Route>
+
+      <Route path="/settings">
+        <ProtectedRoute>
+          <SettingsPage />
+        </ProtectedRoute>
       </Route>
 
       <Route>

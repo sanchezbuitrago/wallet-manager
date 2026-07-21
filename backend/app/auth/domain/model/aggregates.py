@@ -17,6 +17,16 @@ class UserStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
 
 
+class PendingProfile(base_types.ValueObject):
+    """Staged profile changes awaiting verification."""
+
+    first_names: str | None = None
+    last_names: str | None = None
+    email: str | None = None
+    phone_number: standard_types.PhoneNumber | None = None
+    pin: str | None = None
+
+
 class User(base_types.Aggregate):
     """User aggregate owning authentication credentials and profile data."""
 
@@ -30,6 +40,7 @@ class User(base_types.Aggregate):
     status: UserStatus = UserStatus.PENDING
     verification_code: str | None = None
     verification_code_expires_at: float | None = None
+    pending_profile: PendingProfile | None = None
 
     @staticmethod
     def create(
@@ -67,6 +78,26 @@ class User(base_types.Aggregate):
     def activate(self) -> None:
         """Set user status to ACTIVE and clear verification data."""
         self.status = UserStatus.ACTIVE
+        self.verification_code = None
+        self.verification_code_expires_at = None
+
+    def apply_pending_profile(self) -> None:
+        """Apply staged profile changes and clear pending data."""
+        if not self.pending_profile:
+            return
+        p = self.pending_profile
+        if p.first_names is not None:
+            self.first_names = p.first_names
+        if p.last_names is not None:
+            self.last_names = p.last_names
+        if p.email is not None:
+            self.email = p.email
+        if p.phone_number is not None:
+            self.phone_number = p.phone_number
+            self.full_phone = f"{p.phone_number.country_code}{p.phone_number.number}"
+        if p.pin is not None:
+            self.pin = p.pin
+        self.pending_profile = None
         self.verification_code = None
         self.verification_code_expires_at = None
 

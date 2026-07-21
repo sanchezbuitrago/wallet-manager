@@ -23,3 +23,11 @@ class ChangePinRequest(base_types.ValueObject):
 class VerifyTokenRequest(base_types.ValueObject):
     email: str
     code: str
+
+
+class UpdateProfileRequest(base_types.ValueObject):
+    first_names: str | None = None
+    last_names: str | None = None
+    email: str | None = None
+    phone_number: standard_types.PhoneNumber | None = None
+    pin: str | None = None

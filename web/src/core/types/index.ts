@@ -21,6 +21,29 @@ export interface VerifyRequest {
   code: string;
 }
 
+export interface UserProfile {
+  id: string;
+  first_names: string;
+  last_names: string;
+  email: string;
+  phone_number: { country_code: string; number: string };
+  full_phone: string;
+  status: string;
+}
+
+export interface UpdateProfileRequest {
+  first_names?: string;
+  last_names?: string;
+  email?: string;
+  phone_number?: { country_code: string; number: string };
+  pin?: string;
+}
+
+export interface UpdatePinRequest {
+  old_pin: string;
+  new_pin: string;
+}
+
 export interface Timestamp {
   value: number;
 }
