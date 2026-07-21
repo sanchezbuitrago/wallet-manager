@@ -8,6 +8,31 @@ interface ApiResult<T> {
   errors: { title: string; code: string; detail: string }[];
 }
 
+const ERROR_TRANSLATIONS: Record<string, string> = {
+  BAD_EMAIL_OR_PASSWORD_ERROR: "El correo o el PIN son incorrectos",
+  USER_NOT_ACTIVE:
+    "Tu cuenta esta pendiente de verificacion. Por favor verifica tu numero de telefono.",
+  USER_ALREADY_EXIST:
+    "El usuario con este correo ya esta registrado y activo",
+  PHONE_NUMBER_ALREADY_EXIST:
+    "El numero de telefono ya esta registrado por otro usuario",
+  USER_NOT_FOUND: "No se encontro usuario con este correo",
+  INVALID_VERIFICATION_CODE: "El codigo de verificacion es incorrecto",
+  VERIFICATION_CODE_EXPIRED:
+    "El codigo de verificacion ha expirado. Solicita uno nuevo.",
+  "AUTH/INVALID_REFRESH_TOKEN":
+    "El token de sesion ha expirado. Inicia sesion de nuevo.",
+};
+
+function translateErrors(
+  errors: { title: string; code: string; detail: string }[],
+) {
+  return errors.map((e) => ({
+    ...e,
+    detail: ERROR_TRANSLATIONS[e.code] ?? e.detail,
+  }));
+}
+
 async function request<T>(
   method: HttpMethod,
   url: string,
@@ -54,11 +79,11 @@ async function request<T>(
   const json = await res.json();
 
   if (res.status === 200 && json.success === false) {
-    return { success: false, body: json.body, errors: json.errors ?? [] };
+    return { success: false, body: json.body, errors: translateErrors(json.errors ?? []) };
   }
 
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
+    throw new Error(`Error del servidor (HTTP ${res.status})`);
   }
 
   return { success: true, body: json.body, errors: json.errors ?? [] };

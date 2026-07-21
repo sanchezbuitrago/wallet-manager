@@ -75,7 +75,7 @@ export const movementStore = {
         `/analytics/movements?${params}`,
       );
       if (!res.success) {
-        movementsStore.setError(res.errors[0]?.detail || "Failed to load");
+        movementsStore.setError(res.errors[0]?.detail || "Error al cargar movimientos");
       } else {
         movementsStore.setData(res.body);
       }
@@ -141,7 +141,7 @@ export const statsStore = {
     try {
       const res = await api.get<SummaryData>(`/analytics/stats/summary?account_id=${accountId}`);
       if (!res.success) {
-        summaryStore.setError(res.errors[0]?.detail || "Failed");
+        summaryStore.setError(res.errors[0]?.detail || "Error al cargar resumen");
       } else {
         summaryStore.setData(res.body);
       }
@@ -157,7 +157,7 @@ export const statsStore = {
         `/analytics/stats/monthly?account_id=${accountId}&months=${months}`,
       );
       if (!res.success) {
-        monthlyStore.setError(res.errors[0]?.detail || "Failed");
+        monthlyStore.setError(res.errors[0]?.detail || "Error al cargar estadisticas mensuales");
       } else {
         monthlyStore.setData(res.body.items);
       }
@@ -171,7 +171,7 @@ export const statsStore = {
     try {
       const res = await api.get<WeeklyStatData>(`/analytics/stats/weekly?account_id=${accountId}`);
       if (!res.success) {
-        weeklyStore.setError(res.errors[0]?.detail || "Failed");
+        weeklyStore.setError(res.errors[0]?.detail || "Error al cargar estadisticas semanales");
       } else {
         weeklyStore.setData(res.body);
       }
@@ -190,7 +190,7 @@ export const statsStore = {
         `/analytics/stats/by-category?${params}`,
       );
       if (!res.success) {
-        byCategoryStore.setError(res.errors[0]?.detail || "Failed");
+        byCategoryStore.setError(res.errors[0]?.detail || "Error al cargar estadisticas por categoria");
       } else {
         byCategoryStore.setData(res.body.items);
       }

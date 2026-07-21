@@ -43,7 +43,7 @@ export const accountsStore = {
     try {
       const res = await api.get<{ items: AccountData[] }>("/analytics/accounts");
       if (!res.success) {
-        error = res.errors[0]?.detail || "Failed to load accounts";
+        error = res.errors[0]?.detail || "Error al cargar cuentas";
         state = { items: [], selectedId: null };
       } else {
         const items = res.body.items;

@@ -21,3 +21,22 @@ async def on_apply_movement_requested(
         movement_type=event.movement_type
     )
     await movement_service.process(cmd, uow)
+
+
+@eb.event_handler(domain_events.UserCreated)
+async def on_user_created(
+    event: domain_events.UserCreated,
+) -> None:
+    """Create a zero-balance account for a newly verified user."""
+    from app.commons import logs
+    from app.commons.adapters import mongo_uow
+    from app.account.domain.model import aggregates
+
+    _LOGGER = logs.get_logger()
+    _LOGGER.info("Creating account for new user [%s]", event.user_id)
+
+    uow = mongo_uow.MongoUOW()
+    account_repo = uow.get_repo(aggregates.Account)
+    account = aggregates.Account.create(user_id=event.user_id)
+    account_repo.save(new_item=account)
+    _LOGGER.info("Account [%s] created for user [%s]", account.id.value, event.user_id)

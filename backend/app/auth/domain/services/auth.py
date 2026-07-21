@@ -136,6 +136,10 @@ def do_login(
         _LOGGER.info("The email [%s] is not registered", cmd.email)
         raise exceptions.EmailNotFoundError()
 
+    if not user.is_active:
+        _LOGGER.info("User with email [%s] is not active", cmd.email)
+        raise exceptions.UserNotActiveError()
+
     if user.pin != cmd.pin:
         _LOGGER.info("Pin not match to do login with email [%s]", cmd.email)
         raise exceptions.PinNotMatchError()

@@ -8,6 +8,19 @@ export interface LoginResponse {
   refresh_token: string;
 }
 
+export interface RegisterRequest {
+  first_names: string;
+  last_names: string;
+  email: string;
+  phone_number: { country_code: string; number: string };
+  pin: string;
+}
+
+export interface VerifyRequest {
+  email: string;
+  code: string;
+}
+
 export interface Timestamp {
   value: number;
 }

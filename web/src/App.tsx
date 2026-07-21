@@ -2,6 +2,8 @@ import { Route, Switch, Redirect } from "wouter";
 import { useAuth } from "./ui/hooks/useAuth";
 import { Layout } from "./ui/components/Layout";
 import { LoginPage } from "./ui/pages/LoginPage";
+import { RegisterPage } from "./ui/pages/RegisterPage";
+import { VerifyPage } from "./ui/pages/VerifyPage";
 import { DashboardPage } from "./ui/pages/DashboardPage";
 import { MovementsPage } from "./ui/pages/MovementsPage";
 import { MovementDetailPage } from "./ui/pages/MovementDetailPage";
@@ -16,6 +18,8 @@ export function App() {
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
+      <Route path="/verify" component={VerifyPage} />
 
       <Route path="/">
         <ProtectedRoute>

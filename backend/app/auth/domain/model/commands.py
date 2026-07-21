@@ -18,3 +18,8 @@ class DoLoginRequest(base_types.ValueObject):
 class ChangePinRequest(base_types.ValueObject):
     old_pin: str
     new_pin: str
+
+
+class VerifyTokenRequest(base_types.ValueObject):
+    email: str
+    code: str

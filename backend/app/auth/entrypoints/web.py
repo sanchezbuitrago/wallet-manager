@@ -40,7 +40,7 @@ _SETTINGS = _Settings()
 async def create_user(
     create_user_request: commands.CreateUserRequest,
 ) -> fastapi.Response:
-    """Register a new user account."""
+    """Register a new user account or update a pending one."""
     try:
         users.create_user(
             uow=mongo_uow.MongoUOW(),
@@ -59,7 +59,72 @@ async def create_user(
                 standard_types.ApiError(
                     title="User Already Exist",
                     code="USER_ALREADY_EXIST",
-                    detail=f"User with email [{create_user_request.email}] already exist"
+                    detail=f"User with email [{create_user_request.email}] already exist and is active"
+                )
+            ]
+        )
+    except exceptions.PhoneNumberAlreadyExistError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Phone Number Already In Use",
+                    code="PHONE_NUMBER_ALREADY_EXIST",
+                    detail="El numero de telefono ya esta registrado por otro usuario"
+                )
+            ]
+        )
+
+
+@users_routes.post("/verify")
+async def verify_token(
+    body: commands.VerifyTokenRequest,
+) -> fastapi.Response:
+    """Verify a user's verification code and activate their account."""
+    try:
+        users.verify_token(
+            uow=mongo_uow.MongoUOW(),
+            cmd=body,
+        )
+        return formatters.format_http_response(
+            success=True,
+            body={},
+            errors=[]
+        )
+    except exceptions.EmailNotFoundError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="User Not Found",
+                    code="USER_NOT_FOUND",
+                    detail=f"No user found with email [{body.email}]"
+                )
+            ]
+        )
+    except exceptions.InvalidVerificationCodeError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Invalid Code",
+                    code="INVALID_VERIFICATION_CODE",
+                    detail="The verification code is incorrect"
+                )
+            ]
+        )
+    except exceptions.VerificationCodeExpiredError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Code Expired",
+                    code="VERIFICATION_CODE_EXPIRED",
+                    detail="The verification code has expired. Please request a new one."
                 )
             ]
         )
@@ -82,7 +147,7 @@ async def do_login(
             body=login_response.model_dump(),
             errors=[]
         )
-    except (exceptions.EmailNotFoundError, exceptions.PinNotMatchError):
+    except exceptions.EmailNotFoundError:
         return formatters.format_http_response(
             success=False,
             body={},
@@ -90,7 +155,31 @@ async def do_login(
                 standard_types.ApiError(
                     title="Bad email or password",
                     code="BAD_EMAIL_OR_PASSWORD_ERROR",
-                    detail=f"The email or pin are incorrect"
+                    detail="The email or pin are incorrect"
+                )
+            ]
+        )
+    except exceptions.PinNotMatchError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Bad email or password",
+                    code="BAD_EMAIL_OR_PASSWORD_ERROR",
+                    detail="The email or pin are incorrect"
+                )
+            ]
+        )
+    except exceptions.UserNotActiveError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Account Not Active",
+                    code="USER_NOT_ACTIVE",
+                    detail="Tu cuenta esta pendiente de verificacion. Por favor verifica tu numero de telefono."
                 )
             ]
         )

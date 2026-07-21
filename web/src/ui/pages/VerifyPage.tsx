@@ -1,22 +1,33 @@
-import { useState, type FormEvent } from "react";
-import { useAuth } from "../hooks/useAuth";
+import { useState, type FormEvent, useEffect } from "react";
 import { useLocation, Link } from "wouter";
+import { registerStore } from "../../core/stores/register.store";
 
-export function LoginPage() {
-  const { login } = useAuth();
+export function VerifyPage() {
   const [, setLocation] = useLocation();
-  const [email, setEmail] = useState("");
-  const [pin, setPin] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const email = registerStore.getRegistrationEmail();
+
+  useEffect(() => {
+    if (!email) {
+      setLocation("/register");
+    }
+  }, [email, setLocation]);
+
+  if (!email) {
+    return null;
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!email) return;
     setError("");
     setBusy(true);
     try {
-      await login(email, pin);
-      setLocation("/");
+      await registerStore.verify({ email, code });
+      registerStore.clearRegistrationEmail();
+      setLocation("/login");
     } catch (err) {
       setError((err as Error).message);
     }
@@ -39,10 +50,10 @@ export function LoginPage() {
             <span className="text-lg font-bold text-noir-950">WM</span>
           </div>
           <h1 className="text-xl font-bold tracking-tight text-noir-100">
-            Wallet Manager
+            Verificar cuenta
           </h1>
           <p className="mt-1 text-xs text-noir-500">
-            Ingresa tus credenciales para continuar
+            Ingresa el codigo de 6 digitos enviado a tu WhatsApp
           </p>
         </div>
 
@@ -53,37 +64,26 @@ export function LoginPage() {
         )}
 
         <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-noir-400">
-          Correo electronico
+          Codigo de verificacion
         </label>
         <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          type="text"
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
           required
-          className="input-field mb-4"
-          placeholder="tu@correo.com"
-        />
-
-        <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-noir-400">
-          PIN
-        </label>
-        <input
-          type="password"
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          required
-          className="input-field mb-6"
-          placeholder="••••"
+          minLength={6}
+          maxLength={6}
+          className="input-field mb-6 text-center text-2xl tracking-[0.5em]"
+          placeholder="000000"
         />
 
         <button type="submit" disabled={busy} className="btn-primary">
-          {busy ? "Ingresando..." : "Ingresar"}
+          {busy ? "Verificando..." : "Verificar"}
         </button>
 
         <p className="mt-4 text-center text-xs text-noir-500">
-          No tienes una cuenta?{" "}
           <Link href="/register" className="text-noir-300 hover:text-noir-100">
-            Crear cuenta
+            Volver al registro
           </Link>
         </p>
       </form>
