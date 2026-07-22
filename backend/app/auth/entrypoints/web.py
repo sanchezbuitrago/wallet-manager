@@ -59,7 +59,7 @@ async def create_user(
                 standard_types.ApiError(
                     title="User Already Exist",
                     code="USER_ALREADY_EXIST",
-                    detail=f"User with email [{create_user_request.email}] already exist and is active"
+                    detail=f"User with email [{create_user_request.email}] already exist"
                 )
             ]
         )
@@ -183,6 +183,30 @@ async def do_login(
                 )
             ]
         )
+    except exceptions.UserBlockedError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Account Blocked",
+                    code="USER_BLOCKED",
+                    detail="Tu cuenta ha sido bloqueada. Contacta al administrador."
+                )
+            ]
+        )
+    except exceptions.NotAdminError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Not Admin",
+                    code="NOT_ADMIN",
+                    detail="No tienes permisos de administrador."
+                )
+            ]
+        )
 
 
 @auth_routes.post("/refresh")
@@ -242,6 +266,7 @@ async def get_myself(
                 "phone_number": user.phone_number.model_dump(),
                 "full_phone": user.full_phone,
                 "status": user.status.value,
+                "is_admin": user.is_admin,
             },
             errors=[]
         )

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useLocation, Link } from "wouter";
 import { registerStore } from "../../core/stores/register.store";
 
@@ -12,6 +12,13 @@ export function RegisterPage() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!success) return;
+    const timer = setTimeout(() => setLocation("/login"), 2000);
+    return () => clearTimeout(timer);
+  }, [success, setLocation]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -25,7 +32,7 @@ export function RegisterPage() {
         phone_number: { country_code: countryCode, number: phoneNumber },
         pin,
       });
-      setLocation("/verify");
+      setSuccess(true);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -39,6 +46,20 @@ export function RegisterPage() {
         <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-noir-800/20 blur-3xl" />
       </div>
 
+      {success ? (
+        <div className="relative w-full max-w-sm rounded-2xl border border-noir-800/60 bg-noir-900/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-sm text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600">
+            <svg className="h-6 w-6 text-noir-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-lg font-bold text-noir-100">Cuenta creada con exito</h2>
+          <p className="mt-2 text-sm text-noir-400">Redirigiendo al inicio de sesion...</p>
+          <div className="mt-5 h-1 w-full overflow-hidden rounded-full bg-noir-800">
+            <div className="h-full rounded-full bg-emerald-500 animate-[shrink_2s_linear_forwards]" />
+          </div>
+        </div>
+      ) : (
       <form
         onSubmit={handleSubmit}
         className="relative w-full max-w-sm rounded-2xl border border-noir-800/60 bg-noir-900/80 p-8 shadow-2xl shadow-black/40 backdrop-blur-sm"
@@ -143,6 +164,7 @@ export function RegisterPage() {
           </Link>
         </p>
       </form>
+      )}
     </div>
   );
 }

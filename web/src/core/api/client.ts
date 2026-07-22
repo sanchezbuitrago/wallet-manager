@@ -12,8 +12,7 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
   BAD_EMAIL_OR_PASSWORD_ERROR: "El correo o el PIN son incorrectos",
   USER_NOT_ACTIVE:
     "Tu cuenta esta pendiente de verificacion. Por favor verifica tu numero de telefono.",
-  USER_ALREADY_EXIST:
-    "El usuario con este correo ya esta registrado y activo",
+  USER_ALREADY_EXIST: "El usuario con este correo ya esta registrado",
   PHONE_NUMBER_ALREADY_EXIST:
     "El numero de telefono ya esta registrado por otro usuario",
   USER_NOT_FOUND: "No se encontro usuario con este correo",
@@ -23,6 +22,10 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
   "AUTH/INVALID_REFRESH_TOKEN":
     "El token de sesion ha expirado. Inicia sesion de nuevo.",
   PIN_NOT_MATCH: "El PIN actual es incorrecto",
+  USER_BLOCKED:
+    "Tu cuenta ha sido bloqueada. Contacta al administrador.",
+  NOT_ADMIN: "No tienes permisos de administrador.",
+  ADMIN_NOT_ALLOWED: "Esta accion no esta permitida para usuarios administradores.",
 };
 
 function translateErrors(

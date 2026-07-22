@@ -1,6 +1,8 @@
 import datetime
 import jwt
 
+import time
+
 from app.auth.domain.model import exceptions
 from app.auth.domain.model import dtos
 from app.auth.domain.model import commands
@@ -18,6 +20,7 @@ def _create_access_token(
     user_id: str,
     tokens_secret_key: str,
     algorithm: str,
+    is_admin: bool = False,
 ) -> str:
     return jwt.encode(
         payload=dtos.TokenInfo(
@@ -27,6 +30,7 @@ def _create_access_token(
                 + datetime.timedelta(hours=_DEFAULT_ACCESS_TOKEN_TIMEDELTA_IN_HOURS)
             ),
             token_type=dtos.TokenType.ACCESS_TOKEN,
+            is_admin=is_admin,
         ).model_dump(),
         key=tokens_secret_key,
         algorithm=algorithm
@@ -136,6 +140,10 @@ def do_login(
         _LOGGER.info("The email [%s] is not registered", cmd.email)
         raise exceptions.EmailNotFoundError()
 
+    if user.is_blocked:
+        _LOGGER.info("User with email [%s] is blocked", cmd.email)
+        raise exceptions.UserBlockedError()
+
     if not user.is_active:
         _LOGGER.info("User with email [%s] is not active", cmd.email)
         raise exceptions.UserNotActiveError()
@@ -144,6 +152,13 @@ def do_login(
         _LOGGER.info("Pin not match to do login with email [%s]", cmd.email)
         raise exceptions.PinNotMatchError()
 
+    if cmd.require_admin and not user.is_admin:
+        _LOGGER.info("User [%s] is not admin", cmd.email)
+        raise exceptions.NotAdminError()
+
+    user.last_login = time.time()
+    repo.save(new_item=user)
+
     _LOGGER.info("Login process successfully for email [%s]", cmd.email)
 
     return dtos.LoginResponse(
@@ -151,6 +166,7 @@ def do_login(
             user_id=user.id.value,
             tokens_secret_key=auth_secret_key,
             algorithm=algorithm,
+            is_admin=user.is_admin,
         ),
         refresh_token=_create_refresh_token(
             user_id=user.id.value,

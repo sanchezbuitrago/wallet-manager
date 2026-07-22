@@ -9,6 +9,7 @@ from app.commons.cors import setup_cors
 from app.webhooks.entrypoints import webhooks as webhooks_entrypoints
 from app.auth.entrypoints.web import auth_routes
 from app.auth.entrypoints.web import users_routes
+from app.admin.entrypoints.web import admin_routes
 from app.analytics.entrypoints.rest import analytics_routes
 
 # Side-effect imports: registering handlers must happen before the app starts.
@@ -46,6 +47,12 @@ application.include_router(
     router=users_routes,
     prefix="/users",
     tags=["Users"]
+)
+
+application.include_router(
+    router=admin_routes,
+    prefix="/admin",
+    tags=["Admin"]
 )
 
 application.include_router(

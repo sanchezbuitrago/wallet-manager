@@ -1,10 +1,13 @@
 import { Route, Switch, Redirect } from "wouter";
 import { useAuth } from "./ui/hooks/useAuth";
 import { Layout } from "./ui/components/Layout";
+import { AdminLayout } from "./ui/components/AdminLayout";
 import { LoginPage } from "./ui/pages/LoginPage";
 import { RegisterPage } from "./ui/pages/RegisterPage";
 import { VerifyPage } from "./ui/pages/VerifyPage";
 import { RecoverPinPage } from "./ui/pages/RecoverPinPage";
+import { AdminLoginPage } from "./ui/pages/AdminLoginPage";
+import { AdminDashboardPage } from "./ui/pages/AdminDashboardPage";
 import { DashboardPage } from "./ui/pages/DashboardPage";
 import { MovementsPage } from "./ui/pages/MovementsPage";
 import { MovementDetailPage } from "./ui/pages/MovementDetailPage";
@@ -16,6 +19,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <Layout>{children}</Layout>;
 }
 
+function AdminRoute() {
+  return (
+    <AdminLayout>
+      <AdminDashboardPage />
+    </AdminLayout>
+  );
+}
+
 export function App() {
   return (
     <Switch>
@@ -23,6 +34,12 @@ export function App() {
       <Route path="/register" component={RegisterPage} />
       <Route path="/verify" component={VerifyPage} />
       <Route path="/recover-pin" component={RecoverPinPage} />
+
+      <Route path="/admin/login" component={AdminLoginPage} />
+
+      <Route path="/admin/dashboard">
+        <AdminRoute />
+      </Route>
 
       <Route path="/">
         <ProtectedRoute>

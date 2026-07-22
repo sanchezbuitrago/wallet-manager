@@ -13,6 +13,7 @@ class TokenInfo(base_types.ValueObject):
     user_id: str
     exp: datetime.datetime
     token_type: TokenType
+    is_admin: bool = False
 
 
 class LoginResponse(base_types.ValueObject):

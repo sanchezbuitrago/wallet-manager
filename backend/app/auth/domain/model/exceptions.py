@@ -34,3 +34,9 @@ class VerificationCodeExpiredError(Exception):
 
 class PhoneNumberAlreadyExistError(Exception):
     ...
+
+class UserBlockedError(Exception):
+    ...
+
+class NotAdminError(Exception):
+    ...

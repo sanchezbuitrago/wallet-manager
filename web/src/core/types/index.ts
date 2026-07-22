@@ -1,6 +1,7 @@
 export interface LoginRequest {
   email: string;
   pin: string;
+  require_admin?: boolean;
 }
 
 export interface LoginResponse {
@@ -29,6 +30,7 @@ export interface UserProfile {
   phone_number: { country_code: string; number: string };
   full_phone: string;
   status: string;
+  is_admin: boolean;
 }
 
 export interface UpdateProfileRequest {
@@ -128,4 +130,20 @@ export interface ApiResponse<T> {
   success: boolean;
   body: T;
   errors: { title: string; code: string; detail: string }[];
+}
+
+export interface AdminUser {
+  id: string;
+  first_names: string;
+  last_names: string;
+  email: string;
+  phone_number: { country_code: string; number: string };
+  status: string;
+  is_admin: boolean;
+  last_login: number | null;
+}
+
+export interface AdminUserListPage {
+  items: AdminUser[];
+  next_cursor: string | null;
 }

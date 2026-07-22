@@ -13,6 +13,7 @@ class CreateUserRequest(base_types.ValueObject):
 class DoLoginRequest(base_types.ValueObject):
     email: str
     pin: str
+    require_admin: bool = False
 
 
 class ChangePinRequest(base_types.ValueObject):

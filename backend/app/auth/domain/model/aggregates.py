@@ -15,6 +15,7 @@ class UserId(base_types.EntityId):
 class UserStatus(str, enum.Enum):
     PENDING = "PENDING"
     ACTIVE = "ACTIVE"
+    BLOCKED = "BLOCKED"
 
 
 class PendingProfile(base_types.ValueObject):
@@ -38,9 +39,11 @@ class User(base_types.Aggregate):
     full_phone: str
     pin: str
     status: UserStatus = UserStatus.PENDING
+    is_admin: bool = False
     verification_code: str | None = None
     verification_code_expires_at: float | None = None
     pending_profile: PendingProfile | None = None
+    last_login: float | None = None
 
     @staticmethod
     def create(
@@ -104,3 +107,15 @@ class User(base_types.Aggregate):
     @property
     def is_active(self) -> bool:
         return self.status == UserStatus.ACTIVE
+
+    @property
+    def is_blocked(self) -> bool:
+        return self.status == UserStatus.BLOCKED
+
+    def block(self) -> None:
+        """Set user status to BLOCKED."""
+        self.status = UserStatus.BLOCKED
+
+    def unblock(self) -> None:
+        """Set user status to ACTIVE."""
+        self.status = UserStatus.ACTIVE
