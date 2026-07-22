@@ -31,3 +31,13 @@ class UpdateProfileRequest(base_types.ValueObject):
     email: str | None = None
     phone_number: standard_types.PhoneNumber | None = None
     pin: str | None = None
+
+
+class RequestPinRecoveryRequest(base_types.ValueObject):
+    email: str
+
+
+class ResetPinRequest(base_types.ValueObject):
+    email: str
+    code: str
+    new_pin: str

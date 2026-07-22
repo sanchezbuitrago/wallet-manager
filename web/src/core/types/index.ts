@@ -44,6 +44,16 @@ export interface UpdatePinRequest {
   new_pin: string;
 }
 
+export interface PinRecoveryRequest {
+  email: string;
+}
+
+export interface ResetPinRequest {
+  email: string;
+  code: string;
+  new_pin: string;
+}
+
 export interface Timestamp {
   value: number;
 }

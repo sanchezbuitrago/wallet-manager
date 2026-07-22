@@ -392,3 +392,97 @@ async def change_pin(
                 )
             ]
         )
+
+
+@auth_routes.post("/pin-recovery")
+async def request_pin_recovery(
+    body: commands.RequestPinRecoveryRequest,
+) -> fastapi.Response:
+    """Send a verification code to the user's phone for PIN recovery."""
+    try:
+        users.request_pin_recovery(
+            cmd=body,
+            uow=mongo_uow.MongoUOW(),
+        )
+        return formatters.format_http_response(
+            success=True,
+            body={},
+            errors=[]
+        )
+    except exceptions.EmailNotFoundError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="User Not Found",
+                    code="USER_NOT_FOUND",
+                    detail=f"No user found with email [{body.email}]"
+                )
+            ]
+        )
+    except exceptions.UserNotActiveError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Account Not Active",
+                    code="USER_NOT_ACTIVE",
+                    detail="Tu cuenta esta pendiente de verificacion. Por favor verifica tu numero de telefono."
+                )
+            ]
+        )
+
+
+@auth_routes.post("/pin-recovery/verify")
+async def reset_pin(
+    body: commands.ResetPinRequest,
+) -> fastapi.Response:
+    """Verify recovery code and set a new PIN."""
+    try:
+        code_expired = users.reset_pin(
+            cmd=body,
+            uow=mongo_uow.MongoUOW(),
+        )
+        return formatters.format_http_response(
+            success=True,
+            body={"code_expired": code_expired},
+            errors=[]
+        )
+    except exceptions.EmailNotFoundError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="User Not Found",
+                    code="USER_NOT_FOUND",
+                    detail=f"No user found with email [{body.email}]"
+                )
+            ]
+        )
+    except exceptions.UserNotActiveError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Account Not Active",
+                    code="USER_NOT_ACTIVE",
+                    detail="Tu cuenta esta pendiente de verificacion. Por favor verifica tu numero de telefono."
+                )
+            ]
+        )
+    except exceptions.InvalidVerificationCodeError:
+        return formatters.format_http_response(
+            success=False,
+            body={},
+            errors=[
+                standard_types.ApiError(
+                    title="Invalid Code",
+                    code="INVALID_VERIFICATION_CODE",
+                    detail="The verification code is incorrect"
+                )
+            ]
+        )

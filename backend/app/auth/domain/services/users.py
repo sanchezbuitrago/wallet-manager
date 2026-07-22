@@ -370,3 +370,92 @@ def verify_profile_update(
     user.apply_pending_profile()
     repo.save(new_item=user)
     _LOGGER.info("Profile updated for user [%s]", user_id)
+
+
+def request_pin_recovery(
+        cmd: commands.RequestPinRecoveryRequest,
+        uow: unit_of_work.AbstractUnitOfWork,
+) -> None:
+    """Send a verification code to the user's registered phone for PIN recovery.
+
+    Args:
+        cmd: The recovery request with the user's email.
+        uow: Unit of work for data access.
+
+    Raises:
+        EmailNotFoundError: If no user is found with the given email.
+        UserNotActiveError: If the user account is not active.
+    """
+    _LOGGER.info("PIN recovery requested for email [%s]", cmd.email)
+    repo = uow.get_repo(entity_type=aggregates.User)
+    user = next(repo.find_by(find={"email": cmd.email}), None)
+    if not user:
+        raise exceptions.EmailNotFoundError()
+    if not user.is_active:
+        raise exceptions.UserNotActiveError()
+
+    code = _generate_verification_code()
+    user.assign_verification_code(code)
+    repo.save(new_item=user)
+    uow.add_event(domain_events.TokenRequested(
+        user_id=user.id.value,
+        phone_number=user.full_phone,
+        verification_code=code,
+    ))
+    _LOGGER.info("PIN recovery code sent for email [%s]", cmd.email)
+
+
+def reset_pin(
+        cmd: commands.ResetPinRequest,
+        uow: unit_of_work.AbstractUnitOfWork,
+) -> bool:
+    """Verify the recovery code and set a new PIN.
+
+    If the code is valid, the PIN is updated immediately. If the code has
+    expired, a new code is sent automatically.
+
+    Args:
+        cmd: The reset request with email, code, and new PIN.
+        uow: Unit of work for data access.
+
+    Returns:
+        True if the code expired and a new one was sent, False on success.
+
+    Raises:
+        EmailNotFoundError: If no user is found with the given email.
+        UserNotActiveError: If the user account is not active.
+        InvalidVerificationCodeError: If the code is incorrect.
+    """
+    _LOGGER.info("PIN reset requested for email [%s]", cmd.email)
+    repo = uow.get_repo(entity_type=aggregates.User)
+    user = next(repo.find_by(find={"email": cmd.email}), None)
+    if not user:
+        raise exceptions.EmailNotFoundError()
+    if not user.is_active:
+        raise exceptions.UserNotActiveError()
+
+    if user.is_verification_code_valid(cmd.code):
+        user.pin = cmd.new_pin
+        user.verification_code = None
+        user.verification_code_expires_at = None
+        repo.save(new_item=user)
+        _LOGGER.info("PIN reset for email [%s]", cmd.email)
+        return False
+
+    if (
+        user.verification_code is not None
+        and user.verification_code_expires_at is not None
+        and time.time() >= user.verification_code_expires_at
+    ):
+        _LOGGER.info("Recovery code expired for email [%s], resending", cmd.email)
+        code = _generate_verification_code()
+        user.assign_verification_code(code)
+        repo.save(new_item=user)
+        uow.add_event(domain_events.TokenRequested(
+            user_id=user.id.value,
+            phone_number=user.full_phone,
+            verification_code=code,
+        ))
+        return True
+
+    raise exceptions.InvalidVerificationCodeError()

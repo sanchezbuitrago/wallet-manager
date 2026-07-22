@@ -4,6 +4,7 @@ import { Layout } from "./ui/components/Layout";
 import { LoginPage } from "./ui/pages/LoginPage";
 import { RegisterPage } from "./ui/pages/RegisterPage";
 import { VerifyPage } from "./ui/pages/VerifyPage";
+import { RecoverPinPage } from "./ui/pages/RecoverPinPage";
 import { DashboardPage } from "./ui/pages/DashboardPage";
 import { MovementsPage } from "./ui/pages/MovementsPage";
 import { MovementDetailPage } from "./ui/pages/MovementDetailPage";
@@ -21,6 +22,7 @@ export function App() {
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
       <Route path="/verify" component={VerifyPage} />
+      <Route path="/recover-pin" component={RecoverPinPage} />
 
       <Route path="/">
         <ProtectedRoute>

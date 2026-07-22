@@ -80,6 +80,15 @@ export function LoginPage() {
           {busy ? "Ingresando..." : "Ingresar"}
         </button>
 
+        <p className="mt-3 text-center text-xs text-noir-500">
+          <Link
+            href="/recover-pin"
+            className="text-noir-300 hover:text-noir-100"
+          >
+            Olvidaste tu PIN?
+          </Link>
+        </p>
+
         <p className="mt-4 text-center text-xs text-noir-500">
           No tienes una cuenta?{" "}
           <Link href="/register" className="text-noir-300 hover:text-noir-100">
